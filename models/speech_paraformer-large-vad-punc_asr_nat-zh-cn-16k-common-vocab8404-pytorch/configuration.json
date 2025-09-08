@@ -1,0 +1,17 @@
+{
+  "framework": "pytorch",
+  "task" : "auto-speech-recognition",
+  "model": {"type" : "funasr"},
+  "pipeline": {"type":"funasr-pipeline"},
+  "vad_model": "iic/speech_fsmn_vad_zh-cn-16k-common-pytorch",
+  "punc_model": "iic/punc_ct-transformer_cn-en-common-vocab471067-large",
+  "lm_model": "iic/speech_transformer_lm_zh-cn-common-vocab8404-pytorch",
+  "model_name_in_hub": {
+    "ms":"iic/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch", 
+    "hf":""},
+  "file_path_metas": {
+    "init_param":"model.pt", 
+    "config":"config.yaml",
+    "tokenizer_conf": {"token_list": "tokens.json", "seg_dict_file": "seg_dict"},
+    "frontend_conf":{"cmvn_file": "am.mvn"}}
+}

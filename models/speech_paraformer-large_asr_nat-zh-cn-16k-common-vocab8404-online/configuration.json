@@ -1,0 +1,14 @@
+{
+  "framework": "pytorch",
+  "task" : "auto-speech-recognition",
+  "model": {"type" : "funasr"},
+  "pipeline": {"type":"funasr-pipeline"},
+  "model_name_in_hub": {
+    "ms":"iic/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-online", 
+    "hf":""},
+  "file_path_metas": {
+    "init_param":"model.pt", 
+    "config":"config.yaml",
+    "tokenizer_conf": {"token_list": "tokens.json", "seg_dict_file": "seg_dict"},
+    "frontend_conf":{"cmvn_file": "am.mvn"}}
+}

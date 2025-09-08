@@ -1,0 +1,13 @@
+{
+  "framework": "pytorch",
+  "task" : "punctuation",
+  "pipeline": {"type":"funasr-pipeline"},
+  "model": {"type" : "funasr"},
+  "file_path_metas": {
+    "init_param":"model.pt", 
+    "config":"config.yaml",
+    "tokenizer_conf": {"token_list": "tokens.json"}},
+  "model_name_in_hub": {
+    "ms":"iis/punc_ct-transformer_zh-cn-common-vad_realtime-vocab272727", 
+    "hf":""}
+}

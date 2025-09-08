@@ -1,0 +1,35 @@
+/**
+ * Copyright FunASR (https://github.com/alibaba-damo-academy/FunASR). All Rights
+ * Reserved. MIT License  (https://opensource.org/licenses/MIT)
+ */
+
+.asr-container {
+  padding: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.asr-card {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.server-config,
+.control-panel,
+.result-panel {
+  margin-bottom: 20px;
+}
+
+.result-panel .ant-input {
+  font-size: 16px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .asr-container {
+    padding: 10px;
+  }
+  
+  .ant-space {
+    flex-wrap: wrap;
+  }
+}

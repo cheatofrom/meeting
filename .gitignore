@@ -1,0 +1,74 @@
+# ==================== Python 相关 ====================
+# 虚拟环境
+venv/
+env/
+.venv/
+ENV/
+
+# 缓存和字节码
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 安装包和发行版
+build/
+dist/
+*.egg-info/
+*.egg
+
+# ==================== 前端相关 ====================
+# Node.js 依赖
+node_modules/
+.npm
+
+# 构建输出
+dist/
+build/
+*.tgz
+
+# 框架特定
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+
+# ==================== AI/ML 相关 ====================
+# 模型文件（绝对不要传）
+*.pth
+*.pt
+*.h5
+*.hdf5
+*.model
+*.weights
+
+# 数据集（绝对不要传）
+data/
+*.csv
+*.npy
+*.npz
+
+# 训练输出和日志
+logs/
+runs/
+outputs/
+results/
+
+# ==================== IDE 和系统 ====================
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# ==================== 敏感信息 ====================
+# 环境变量和密钥（重中之重！）
+.env
+*.env
+secrets.yml
+credentials.json

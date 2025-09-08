@@ -1,0 +1,23 @@
+{
+    "framework": "pytorch",
+    "task": "speaker-verification",
+    "model_config": "config.yaml",
+    "model_file": "campplus_cn_common.bin",
+    "model": {
+        "type": "cam++-sv",
+        "model_config": {
+            "sample_rate": 16000,
+            "fbank_dim": 80,
+            "emb_size": 192
+        },
+        "pretrained_model": "campplus_cn_common.bin",
+        "yesOrno_thr": 0.31
+    },
+    "pipeline": {
+        "type": "speaker-verification"
+    },
+    "file_path_metas": {
+        "init_param":"campplus_cn_common.bin", 
+        "config":"config.yaml"
+    }
+}
