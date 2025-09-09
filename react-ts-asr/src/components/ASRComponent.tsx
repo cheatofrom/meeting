@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Input, Radio, Switch, Upload, Space, Card, Typography, message, App } from 'antd';
+import { Button, Input, Radio, Switch, Upload, Space, Card, Typography, App, Progress } from 'antd';
 import { AudioOutlined, UploadOutlined, SettingOutlined } from '@ant-design/icons';
 import { WebSocketService } from '../services/WebSocketService';
 import { AudioRecorderService, type RecordingResult } from '../services/AudioRecorderService';
@@ -20,8 +20,9 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recognitionText, setRecognitionText] = useState<string>('');
-  const [onlineText, setOnlineText] = useState<string>(''); // 在线模式已确认文本
-  const [offlineText, setOfflineText] = useState<string>(''); // 离线模式文本
+  const [onlineText, setOnlineText] = useState<string>('');
+  const [offlineText, setOfflineText] = useState<string>('');
+  // 移除uploadAborted状态变量，不再需要终止上传功能
   // 移除currentPartialText状态，改为与HTML5版本一致的简单累积逻辑
   const [asrMode, setAsrMode] = useState<string>('2pass');
   const [useITN, setUseITN] = useState<boolean>(true);
@@ -29,6 +30,12 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
   const [hotwords, setHotwords] = useState<string>('');
   const [recordedAudio, setRecordedAudio] = useState<RecordingResult | null>(null);
   const [audioUrl, setAudioUrl] = useState<string>('');
+  
+  // 语音识别相关状态
+  const [recognitionResults, setRecognitionResults] = useState<any[]>([]);
+  const [isRecognizing, setIsRecognizing] = useState<boolean>(false);
+  const [batchSizeS, setBatchSizeS] = useState<number>(300);
+  const [recognitionHotword, setRecognitionHotword] = useState<string>('');
   
   // Refs
   const webSocketServiceRef = useRef<WebSocketService | null>(null);
@@ -134,6 +141,8 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
         console.log('✅ 是否最终结果:', is_final);
         console.log('✅ 时间戳:', timestamp);
         
+        // 识别结果处理（移除处理状态更新）
+        
         // 根据html5示例的逻辑处理识别结果
         if (asrmodel === "2pass-offline" || asrmodel === "offline") {
           // 离线模式：累积到离线文本变量，然后设置显示文本为离线文本
@@ -146,13 +155,20 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
             return newText;
           });
         } else {
-          // 在线模式：与HTML5版本一致，直接累积所有识别结果（不区分临时和最终）
-          console.log('🔄 在线模式：累积识别文本（与HTML5版本一致）');
-          setOnlineText(prev => {
-            const newText = prev + rectxt;
-            console.log('🔄 在线模式累积后的文本:', `"${newText}"`);
-            return newText;
-          });
+          // 在线模式：直接累积所有非空识别文本（服务器端已设置所有结果为临时结果）
+          console.log('🔄 在线模式识别结果:', `"${rectxt}"`);
+          
+          if (rectxt.trim().length > 0) {
+            // 直接累积识别文本
+            setOnlineText(prev => {
+              const newText = prev + rectxt;
+              console.log('🔄 在线模式累积文本:', `"${newText}"`);
+              setRecognitionText(newText);
+              return newText;
+            });
+          } else {
+            console.log('⚠️ 收到空识别文本，保持当前显示不变');
+          }
         }
       } else {
         console.warn('⚠️ 消息中没有text字段，完整消息:', data);
@@ -324,7 +340,7 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
     
     if (!isConnected) {
       console.error('❌ 连接状态检查失败');
-      message.error('请先连接服务器');
+      messageApi.error('请先连接服务器');
       return;
     }
     
@@ -340,9 +356,10 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
       
       if (success) {
         setIsRecording(true);
+        // 录音状态更新（移除处理状态）
         sampleBufferRef.current = new Int16Array();
         console.log('✅ 录音已开始，状态已更新为:', true);
-        message.success('开始录音');
+        messageApi.success('开始录音');
         
         // 延迟检查录音状态
          setTimeout(() => {
@@ -351,11 +368,11 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
          }, 500);
       } else {
         console.error('❌ 录音器启动失败');
-        message.error('启动录音失败');
+        messageApi.error('启动录音失败');
       }
     } catch (error) {
       console.error('❌ 录音启动异常:', error);
-      message.error('录音启动异常');
+      messageApi.error('录音启动异常');
     }
     console.log('=== 录音流程结束 ===');
   };
@@ -366,6 +383,7 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
     if (audioRecorderRef.current) {
       const result = audioRecorderRef.current.stop();
       setIsRecording(false);
+      // 录音完成（移除处理状态）
       
       if (result) {
         console.log('录音已停止，获得录音数据:', {
@@ -387,7 +405,7 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
           const newAudioUrl = URL.createObjectURL(result.blob);
           setAudioUrl(newAudioUrl);
           console.log('音频URL已创建:', newAudioUrl);
-          message.success(`录音完成！时长: ${result.duration.toFixed(1)}秒`);
+          messageApi.success(`录音完成！时长: ${result.duration.toFixed(1)}秒`);
         }
       } else {
         console.log('录音已停止，但未获得录音数据');
@@ -397,15 +415,16 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
   
   // 处理文件上传
   const handleFileUpload = async (file: File) => {
+    // 检查连接状态
     if (!isConnected) {
-      message.error('请先连接服务器');
+      messageApi.error('请先连接WebSocket服务器');
       return false;
     }
     
     // 检查文件类型
     const fileExt = file.name.split('.').pop()?.toLowerCase();
     if (!fileExt || !['wav', 'mp3', 'pcm'].includes(fileExt)) {
-      message.error('仅支持WAV、MP3或PCM格式的音频文件');
+      messageApi.error('仅支持WAV、MP3或PCM格式的音频文件');
       return false;
     }
     
@@ -425,7 +444,7 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
         pcmData = new Int16Array(arrayBuffer);
       } else {
         // MP3需要先解码，这里简化处理
-        message.error('暂不支持MP3格式，请上传WAV或PCM格式的文件');
+        messageApi.error('暂不支持MP3格式，请上传WAV或PCM格式的文件');
         return false;
       }
       
@@ -434,44 +453,168 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
         pcmData = AudioUtils.resampleAudio(pcmData, sampleRate, 16000);
       }
       
-      // 发送文件数据
-      if (webSocketServiceRef.current) {
-        // 发送初始化请求
-        const request = {
-          chunk_size: [5, 10, 5],
-          wav_name: file.name,
-          is_speaking: true,
-          chunk_interval: 10,
-          itn: useITN,
-          mode: asrMode,
-          wav_format: fileExt === 'wav' ? 'PCM' : fileExt,
-          audio_fs: 16000,
-          hotwords: hotwords ? hotwords.split(',').map(word => word.trim()) : undefined
-        };
-        
-        webSocketServiceRef.current.sendInitialRequest(request);
-        
-        // 发送音频数据
-        webSocketServiceRef.current.wsSend(pcmData.buffer);
-        
-        message.success('文件上传成功，正在处理...');
-      }
+      // 直接处理文件
+      await processUploadedFile(file, pcmData);
     } catch (error) {
       console.error('处理文件失败:', error);
-      message.error('处理文件失败');
+      messageApi.error('处理文件失败');
     }
     
     return false; // 阻止默认上传行为
   };
   
+  // 处理已上传的文件
+   const processUploadedFile = async (file: File, pcmData: Int16Array) => {
+     try {
+       console.log('📁 处理上传的音频文件:', {
+         fileName: file.name,
+         fileSize: file.size,
+         pcmDataLength: pcmData.length,
+         duration: (pcmData.length / 16000).toFixed(2) + '秒'
+       });
+       
+       // 创建音频Blob用于播放和保存
+       const wavBlob = createWavBlob(pcmData, 16000);
+       
+       // 创建录音结果对象，与录音完成后的格式保持一致
+       const uploadResult: RecordingResult = {
+         audioData: pcmData,
+         blob: wavBlob,
+         duration: pcmData.length / 16000,
+         sampleRate: 16000
+       };
+       
+       // 保存上传的音频数据
+       setRecordedAudio(uploadResult);
+       
+       // 创建音频URL用于播放
+       if (audioUrl) {
+         URL.revokeObjectURL(audioUrl);
+       }
+       
+       const newAudioUrl = URL.createObjectURL(wavBlob);
+       setAudioUrl(newAudioUrl);
+       
+       console.log('✅ 音频文件已保存，可以播放和下载');
+       messageApi.success(`音频文件上传成功！时长: ${uploadResult.duration.toFixed(1)}秒`);
+       
+    } catch (error) {
+      console.error('处理文件失败:', error);
+      messageApi.error('处理文件失败');
+    }
+   };
+   
+   // 创建WAV格式的Blob
+   const createWavBlob = (pcmData: Int16Array, sampleRate: number): Blob => {
+     const length = pcmData.length;
+     const buffer = new ArrayBuffer(44 + length * 2);
+     const view = new DataView(buffer);
+     
+     // WAV文件头
+     const writeString = (offset: number, string: string) => {
+       for (let i = 0; i < string.length; i++) {
+         view.setUint8(offset + i, string.charCodeAt(i));
+       }
+     };
+     
+     writeString(0, 'RIFF');
+     view.setUint32(4, 36 + length * 2, true);
+     writeString(8, 'WAVE');
+     writeString(12, 'fmt ');
+     view.setUint32(16, 16, true);
+     view.setUint16(20, 1, true);
+     view.setUint16(22, 1, true);
+     view.setUint32(24, sampleRate, true);
+     view.setUint32(28, sampleRate * 2, true);
+     view.setUint16(32, 2, true);
+     view.setUint16(34, 16, true);
+     writeString(36, 'data');
+     view.setUint32(40, length * 2, true);
+     
+     // 写入PCM数据
+     let offset = 44;
+     for (let i = 0; i < length; i++) {
+       view.setInt16(offset, pcmData[i], true);
+       offset += 2;
+     }
+     
+     return new Blob([buffer], { type: 'audio/wav' });
+   };
+  
+  // 语音识别函数
+  const handleRecognizeAudio = async () => {
+    if (!recordedAudio || !recordedAudio.blob) {
+      messageApi.error('请先录音或上传音频文件');
+      return;
+    }
+
+    setIsRecognizing(true);
+    setRecognitionResults([]);
+
+    try {
+      // 创建FormData
+      const formData = new FormData();
+      formData.append('audio', recordedAudio.blob, 'audio.wav');
+      formData.append('batch_size_s', batchSizeS.toString());
+      if (recognitionHotword.trim()) {
+        formData.append('hotword', recognitionHotword.trim());
+      }
+
+      // 调用后端API
+      const response = await fetch('https://192.168.1.66:10096/api/recognize', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`识别失败: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setRecognitionResults(result.data || []);
+        messageApi.success(`识别完成！共识别出 ${result.data?.length || 0} 个语音段`);
+      } else {
+        throw new Error(result.error || '识别失败');
+      }
+    } catch (error) {
+      console.error('语音识别失败:', error);
+      messageApi.error(`语音识别失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    } finally {
+      setIsRecognizing(false);
+    }
+  };
+
+  // 复制识别结果
+  const copyRecognitionResults = () => {
+    const text = recognitionResults.map((item, index) => 
+      `[${index + 1}] ${item.speaker || '说话人'} (${item.start}s-${item.end}s): ${item.text}`
+    ).join('\n');
+    
+    navigator.clipboard.writeText(text).then(() => {
+      messageApi.success('识别结果已复制到剪贴板');
+    }).catch(() => {
+      messageApi.error('复制失败');
+    });
+  };
+
+  // 清除识别结果
+  const clearRecognitionResults = () => {
+    setRecognitionResults([]);
+    messageApi.success('已清除识别结果');
+  };
+  
+  // 移除终止上传功能
+  
   // 切换协议
   const toggleWsProtocol = () => {
     if (serverUrl.startsWith('wss://')) {
       setServerUrl(serverUrl.replace('wss://', 'ws://'));
-      message.info('已切换到WS协议（不安全但可能解决证书问题）');
+      messageApi.info('已切换到WS协议（不安全但可能解决证书问题）');
     } else if (serverUrl.startsWith('ws://')) {
       setServerUrl(serverUrl.replace('ws://', 'wss://'));
-      message.info('已切换到WSS协议（安全连接）');
+      messageApi.info('已切换到WSS协议（安全连接）');
     }
   };
   
@@ -483,7 +626,7 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
   return (
     <div className="asr-container">
       <Card className="asr-card">
-        <Title level={2}>FunASR 语音识别</Title>
+        <Title level={2}>AI会议纪要(CDTL)</Title>
         
         <div className="server-config">
           <Space direction="vertical" style={{ width: '100%' }}>
@@ -600,11 +743,16 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
                 </Button>
               </Upload>
               
+              {/* 移除上传进度显示 */}
+              
+              {/* 移除处理状态显示 */}
+              
               <Button 
                 onClick={() => {
                   setRecognitionText('');
                   setOnlineText('');
                   setOfflineText('');
+                  // 清理状态（移除处理状态）
                   // 清理录音数据
                   if (audioUrl) {
                     URL.revokeObjectURL(audioUrl);
@@ -612,7 +760,7 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
                   setAudioUrl('');
                   setRecordedAudio(null);
                   console.log('🧹 已清空识别文本和录音数据');
-                  message.success('已清空识别结果和录音');
+                  messageApi.success('已清空识别结果和录音');
                 }}
               >
                 清空全部
@@ -663,7 +811,7 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
                       document.body.appendChild(link);
                       link.click();
                       document.body.removeChild(link);
-                      message.success('音频文件已下载');
+                      messageApi.success('音频文件已下载');
                     }
                   }}
                 >
@@ -678,12 +826,94 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
                     }
                     setAudioUrl('');
                     setRecordedAudio(null);
-                    message.success('已清除录音');
+                    messageApi.success('已清除录音');
                   }}
                 >
                   清除录音
                 </Button>
               </Space>
+            </Space>
+          </div>
+        )}
+        
+        {/* 语音识别控制面板 */}
+        {audioUrl && (
+          <div className="recognition-panel" style={{ marginTop: '16px' }}>
+            <Title level={4}>语音分离</Title>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Space wrap>
+                <Input 
+                  addonBefore="批处理大小(秒)" 
+                  value={batchSizeS} 
+                  onChange={(e) => setBatchSizeS(Number(e.target.value) || 300)}
+                  style={{ width: 200 }}
+                  type="number"
+                  min={1}
+                  max={3600}
+                />
+                <Input 
+                  addonBefore="热词" 
+                  value={recognitionHotword} 
+                  onChange={(e) => setRecognitionHotword(e.target.value)}
+                  style={{ width: 200 }}
+                  placeholder="如：魔搭"
+                />
+              </Space>
+              
+              <Button 
+                type="primary"
+                icon={<SettingOutlined />}
+                loading={isRecognizing}
+                onClick={handleRecognizeAudio}
+                disabled={!recordedAudio}
+              >
+                {isRecognizing ? '识别中...' : '开始识别'}
+              </Button>
+            </Space>
+          </div>
+        )}
+        
+        {/* 识别结果显示面板 */}
+        {recognitionResults.length > 0 && (
+          <div className="recognition-results" style={{ marginTop: '16px' }}>
+            <Title level={4}>识别结果 ({recognitionResults.length}个语音段)</Title>
+            <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #d9d9d9', borderRadius: '6px', padding: '12px' }}>
+              {recognitionResults.map((result, index) => (
+                <div key={index} style={{ marginBottom: '12px', padding: '8px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+                  <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
+                    [{result.time_range}] {result.speaker}
+                  </div>
+                  <div style={{ fontSize: '14px', lineHeight: '1.5' }}>
+                    {result.text}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <Space style={{ marginTop: '8px' }}>
+              <Button 
+                size="small"
+                onClick={() => {
+                  const fullText = recognitionResults.map(r => `[${r.time_range}] ${r.speaker}: ${r.text}`).join('\n');
+                  navigator.clipboard.writeText(fullText).then(() => {
+                    messageApi.success('识别结果已复制到剪贴板');
+                  }).catch(() => {
+                    messageApi.error('复制失败');
+                  });
+                }}
+              >
+                复制全部结果
+              </Button>
+              
+              <Button 
+                size="small"
+                onClick={() => {
+                  setRecognitionResults([]);
+                  messageApi.success('已清除识别结果');
+                }}
+              >
+                清除结果
+              </Button>
             </Space>
           </div>
         )}
