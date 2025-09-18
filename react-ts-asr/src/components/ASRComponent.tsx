@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Input, Radio, Switch, Upload, Space, Card, Typography, App, Progress } from 'antd';
-import { AudioOutlined, UploadOutlined, SettingOutlined } from '@ant-design/icons';
+import { Button, Input, Radio, Switch, Upload, Space, Card, Typography, App, Progress, Modal, Tooltip } from 'antd';
+import { AudioOutlined, UploadOutlined, SettingOutlined, EditOutlined, SaveOutlined, UserOutlined, DownloadOutlined } from '@ant-design/icons';
 import { WebSocketService } from '../services/WebSocketService';
 import { AudioRecorderService, type RecordingResult } from '../services/AudioRecorderService';
 import { AudioUtils } from '../utils/AudioUtils';
@@ -36,6 +36,16 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
   const [isRecognizing, setIsRecognizing] = useState<boolean>(false);
   const [batchSizeS, setBatchSizeS] = useState<number>(300);
   const [recognitionHotword, setRecognitionHotword] = useState<string>('');
+  
+  // 编辑相关状态
+  const [editedResults, setEditedResults] = useState<any[]>([]);
+  const [editingIndex, setEditingIndex] = useState<number>(-1);
+  const [editingText, setEditingText] = useState<string>('');
+  
+  // 说话人替换相关状态
+  const [speakerReplaceVisible, setSpeakerReplaceVisible] = useState<boolean>(false);
+  const [currentSpeaker, setCurrentSpeaker] = useState<string>('');
+  const [newSpeakerName, setNewSpeakerName] = useState<string>('');
   
   // Refs
   const webSocketServiceRef = useRef<WebSocketService | null>(null);
@@ -586,9 +596,98 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
     }
   };
 
+  // 同步识别结果到编辑结果
+  useEffect(() => {
+    setEditedResults([...recognitionResults]);
+  }, [recognitionResults]);
+
+  // 开始编辑文本
+  const startEditText = (index: number, currentText: string) => {
+    setEditingIndex(index);
+    setEditingText(currentText);
+  };
+
+  // 保存编辑的文本
+  const saveEditText = () => {
+    if (editingIndex !== -1) {
+      const newResults = [...editedResults];
+      newResults[editingIndex] = {
+        ...newResults[editingIndex],
+        text: editingText
+      };
+      setEditedResults(newResults);
+      setEditingIndex(-1);
+      setEditingText('');
+      messageApi.success('文本编辑已保存');
+    }
+  };
+
+  // 取消编辑
+  const cancelEdit = () => {
+    setEditingIndex(-1);
+    setEditingText('');
+  };
+  
+  // 处理说话人替换
+  const handleSpeakerReplace = () => {
+    if (!newSpeakerName.trim()) {
+      messageApi.error('请输入新的说话人名称');
+      return;
+    }
+
+    const newResults = editedResults.map(result => {
+      if (result.speaker === currentSpeaker) {
+        return {
+          ...result,
+          speaker: newSpeakerName.trim()
+        };
+      }
+      return result;
+    });
+
+    setEditedResults(newResults);
+    setSpeakerReplaceVisible(false);
+    messageApi.success(`已将"${currentSpeaker}"替换为"${newSpeakerName.trim()}"}`);
+  };
+
+  // 保存结果到文件
+  const saveResultsToFile = (format: 'txt' | 'json') => {
+    let content: string;
+    let filename: string;
+    let mimeType: string;
+
+    if (format === 'txt') {
+      content = editedResults.map((result, index) => 
+        `[${index + 1}] ${result.speaker} (${result.time_range}): ${result.text}`
+      ).join('\n');
+      filename = `meeting_transcript_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+      mimeType = 'text/plain';
+    } else {
+      content = JSON.stringify({
+        timestamp: new Date().toISOString(),
+        total_segments: editedResults.length,
+        results: editedResults
+      }, null, 2);
+      filename = `meeting_transcript_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+      mimeType = 'application/json';
+    }
+
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    messageApi.success(`已保存为 ${filename}`);
+  };
+
   // 复制识别结果
   const copyRecognitionResults = () => {
-    const text = recognitionResults.map((item, index) => 
+    const text = editedResults.map((item, index) => 
       `[${index + 1}] ${item.speaker || '说话人'} (${item.start}s-${item.end}s): ${item.text}`
     ).join('\n');
     
@@ -873,18 +972,86 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
           </div>
         )}
         
-        {/* 识别结果显示面板 */}
-        {recognitionResults.length > 0 && (
+        {/* 识别结果显示面板 - 修改版 */}
+        {editedResults.length > 0 && (
           <div className="recognition-results" style={{ marginTop: '16px' }}>
-            <Title level={4}>识别结果 ({recognitionResults.length}个语音段)</Title>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <Title level={4}>识别结果 ({editedResults.length}个语音段)</Title>
+              <Space>
+                <Button 
+                  size="small" 
+                  icon={<SaveOutlined />}
+                  onClick={() => saveResultsToFile('txt')}
+                >
+                  导出文本
+                </Button>
+                <Button 
+                  size="small" 
+                  icon={<DownloadOutlined />}
+                  onClick={() => saveResultsToFile('json')}
+                >
+                  导出JSON
+                </Button>
+              </Space>
+            </div>
+            
             <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #d9d9d9', borderRadius: '6px', padding: '12px' }}>
-              {recognitionResults.map((result, index) => (
-                <div key={index} style={{ marginBottom: '12px', padding: '8px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-                  <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
-                    [{result.time_range}] {result.speaker}
+              {editedResults.map((result, index) => (
+                <div key={index} style={{ marginBottom: '12px', padding: '8px', backgroundColor: '#f5f5f5', borderRadius: '4px', border: editingIndex === index ? '2px solid #1890ff' : '1px solid transparent' }}>
+                  <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>[{result.time_range}]</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Tooltip title="点击替换说话人名称">
+                        <Button 
+                          type="text" 
+                          size="small" 
+                          icon={<UserOutlined />}
+                          onClick={() => {
+                            setCurrentSpeaker(result.speaker);
+                            setNewSpeakerName('');
+                            setSpeakerReplaceVisible(true);
+                          }}
+                          style={{ padding: '0 4px', height: 'auto', fontSize: '12px' }}
+                        >
+                          {result.speaker}
+                        </Button>
+                      </Tooltip>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '14px', lineHeight: '1.5' }}>
-                    {result.text}
+                  
+                  <div style={{ fontSize: '14px', lineHeight: '1.5', position: 'relative' }}>
+                    {editingIndex === index ? (
+                      <div>
+                        <Input.TextArea
+                          value={editingText}
+                          onChange={(e) => setEditingText(e.target.value)}
+                          autoSize={{ minRows: 2, maxRows: 6 }}
+                          style={{ marginBottom: '8px' }}
+                        />
+                        <Space size="small">
+                          <Button size="small" type="primary" onClick={saveEditText}>
+                            保存
+                          </Button>
+                          <Button size="small" onClick={cancelEdit}>
+                            取消
+                          </Button>
+                        </Space>
+                      </div>
+                    ) : (
+                      <div 
+                        style={{ cursor: 'pointer', padding: '4px', borderRadius: '4px' }}
+                        onClick={() => startEditText(index, result.text)}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#e6f7ff';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        {result.text}
+                        <EditOutlined style={{ marginLeft: '8px', color: '#1890ff', opacity: 0.6 }} />
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -894,7 +1061,7 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
               <Button 
                 size="small"
                 onClick={() => {
-                  const fullText = recognitionResults.map(r => `[${r.time_range}] ${r.speaker}: ${r.text}`).join('\n');
+                  const fullText = editedResults.map(r => `[${r.time_range}] ${r.speaker}: ${r.text}`).join('\n');
                   navigator.clipboard.writeText(fullText).then(() => {
                     messageApi.success('识别结果已复制到剪贴板');
                   }).catch(() => {
@@ -908,6 +1075,7 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
               <Button 
                 size="small"
                 onClick={() => {
+                  setEditedResults([]);
                   setRecognitionResults([]);
                   messageApi.success('已清除识别结果');
                 }}
@@ -917,6 +1085,34 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
             </Space>
           </div>
         )}
+        
+        {/* 说话人替换Modal */}
+        <Modal
+          title="替换说话人名称"
+          open={speakerReplaceVisible}
+          onOk={handleSpeakerReplace}
+          onCancel={() => {
+            setSpeakerReplaceVisible(false);
+            setCurrentSpeaker('');
+            setNewSpeakerName('');
+          }}
+          okText="替换"
+          cancelText="取消"
+        >
+          <div style={{ marginBottom: '16px' }}>
+            <Text>当前说话人: <Text strong>{currentSpeaker}</Text></Text>
+          </div>
+          <div>
+            <Text>新的说话人名称:</Text>
+            <Input
+              value={newSpeakerName}
+              onChange={(e) => setNewSpeakerName(e.target.value)}
+              placeholder="请输入真实姓名"
+              style={{ marginTop: '8px' }}
+              onPressEnter={handleSpeakerReplace}
+            />
+          </div>
+        </Modal>
       </Card>
     </div>
   );
