@@ -18,6 +18,7 @@ dist/
 *.egg-info/
 *.egg
 
+models/
 # ==================== 前端相关 ====================
 # Node.js 依赖
 node_modules/

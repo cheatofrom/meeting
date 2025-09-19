@@ -20,11 +20,9 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recognitionText, setRecognitionText] = useState<string>('');
-  const [onlineText, setOnlineText] = useState<string>('');
-  const [offlineText, setOfflineText] = useState<string>('');
   // 移除uploadAborted状态变量，不再需要终止上传功能
   // 移除currentPartialText状态，改为与HTML5版本一致的简单累积逻辑
-  const [asrMode, setAsrMode] = useState<string>('2pass');
+  // 固定使用2pass模式，移除asrMode状态
   const [useITN, setUseITN] = useState<boolean>(true);
   const [isFileMode, setIsFileMode] = useState<boolean>(false);
   const [hotwords, setHotwords] = useState<string>('');
@@ -58,7 +56,7 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
       msgHandle: handleWebSocketMessage,
       stateHandle: handleConnectionState,
       hotwords: hotwords,
-      mode: asrMode
+      mode: '2pass' // 固定使用2pass模式
     });
     
     audioRecorderRef.current = new AudioRecorderService({
@@ -66,22 +64,15 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
     });
   }, []);
   
-  // 监听onlineText变化，避免频繁重新渲染
-  useEffect(() => {
-    if (asrMode === 'online') {
-      setRecognitionText(onlineText);
-    }
-  }, [onlineText, asrMode]);
-  
-  // 更新WebSocket配置当热词或模式改变时
+  // 更新WebSocket配置当热词改变时
   useEffect(() => {
     if (webSocketServiceRef.current) {
       webSocketServiceRef.current.updateConfig({
         hotwords: hotwords,
-        mode: asrMode
+        mode: '2pass' // 固定使用2pass模式
       });
     }
-  }, [hotwords, asrMode]);
+  }, [hotwords]);
   
   // 处理服务器URL变化
   useEffect(() => {
@@ -151,34 +142,18 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
         console.log('✅ 是否最终结果:', is_final);
         console.log('✅ 时间戳:', timestamp);
         
-        // 识别结果处理（移除处理状态更新）
+        // 2pass模式识别结果处理 - 简化逻辑，直接累积文本
+        console.log('🔄 2pass模式识别结果:', `"${rectxt}"`);
         
-        // 根据html5示例的逻辑处理识别结果
-        if (asrmodel === "2pass-offline" || asrmodel === "offline") {
-          // 离线模式：累积到离线文本变量，然后设置显示文本为离线文本
-          console.log('🔄 离线模式：累积文本');
-          setOfflineText(prev => {
+        if (rectxt.trim().length > 0) {
+          // 直接累积识别文本
+          setRecognitionText(prev => {
             const newText = prev + rectxt;
-            console.log('🔄 离线模式累积后的文本:', `"${newText}"`);
-            // 离线模式：显示文本 = 离线文本（与HTML5版本一致：rec_text=offline_text）
-            setRecognitionText(newText);
+            console.log('🔄 累积文本:', `"${newText}"`);
             return newText;
           });
         } else {
-          // 在线模式：直接累积所有非空识别文本（服务器端已设置所有结果为临时结果）
-          console.log('🔄 在线模式识别结果:', `"${rectxt}"`);
-          
-          if (rectxt.trim().length > 0) {
-            // 直接累积识别文本
-            setOnlineText(prev => {
-              const newText = prev + rectxt;
-              console.log('🔄 在线模式累积文本:', `"${newText}"`);
-              setRecognitionText(newText);
-              return newText;
-            });
-          } else {
-            console.log('⚠️ 收到空识别文本，保持当前显示不变');
-          }
+          console.log('⚠️ 收到空识别文本，保持当前显示不变');
         }
       } else {
         console.warn('⚠️ 消息中没有text字段，完整消息:', data);
@@ -751,11 +726,9 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
         <div className="control-panel">
           <Space direction="vertical" style={{ width: '100%' }}>
             <Space wrap>
-              <Radio.Group value={asrMode} onChange={(e) => setAsrMode(e.target.value)} disabled={isConnected}>
-                <Radio.Button value="2pass">2pass模式</Radio.Button>
-                <Radio.Button value="offline">离线模式</Radio.Button>
-                <Radio.Button value="online">在线模式</Radio.Button>
-              </Radio.Group>
+              <Space>
+                <Text>模式: 2pass</Text>
+              </Space>
               
               <Space>
                 <Text>使用ITN:</Text>
@@ -790,7 +763,7 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
                    console.log('录音状态:', isRecording);
                    console.log('文件模式:', isFileMode);
                    console.log('服务器地址:', serverUrl);
-                   console.log('ASR模式:', asrMode);
+                   console.log('ASR模式: 2pass');
                    console.log('使用ITN:', useITN);
                    console.log('热词:', hotwords);
                    console.log('WebSocket服务:', webSocketServiceRef.current ? '已初始化' : '未初始化');
@@ -849,8 +822,6 @@ const ASRComponent: React.FC<ASRComponentProps> = ({ defaultServerUrl = 'ws://lo
               <Button 
                 onClick={() => {
                   setRecognitionText('');
-                  setOnlineText('');
-                  setOfflineText('');
                   // 清理状态（移除处理状态）
                   // 清理录音数据
                   if (audioUrl) {

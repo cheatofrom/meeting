@@ -178,7 +178,7 @@ export class WebSocketService {
       "is_speaking": true,
       "chunk_interval": 10,
       "itn": false,
-      "mode": this.config.mode || "2pass",
+      "mode": "2pass", // 固定使用2pass模式
       "wav_format": "pcm",
       "audio_fs": 16000,
       "hotwords": this.config.hotwords ? this.config.hotwords.split(',').map(w => w.trim()) : []
