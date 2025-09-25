@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from funasr import AutoModel
 import logging
 import uvicorn
+import torch
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -35,13 +36,13 @@ def init_model():
         logger.info("正在初始化FunASR模型...")
         model = AutoModel(
             model="/home/dell/mnt/ai-work/Meeting/models/speech_paraformer-large-vad-punc-spk_asr_nat-zh-cn", 
-            model_revision="v2.0.4",
-            vad_model="fsmn-vad", 
-            vad_model_revision="v2.0.4",
-            punc_model="ct-punc-c", 
-            punc_model_revision="v2.0.4",
-            spk_model="cam++", 
-            spk_model_revision="v2.0.2",
+            # model_revision="v2.0.4",
+            vad_model="/home/dell/mnt/ai-work/Meeting/models/speech_fsmn_vad_zh-cn-16k-common-pytorch", 
+            # vad_model_revision="v2.0.4",
+            punc_model="/home/dell/mnt/ai-work/Meeting/models/punc_ct-transformer_zh-cn-common-vocab272727-pytorch", 
+            # punc_model_revision="v2.0.4",
+            spk_model="/home/dell/mnt/ai-work/Meeting/models/speech_campplus_sv_zh-cn_16k-common", 
+            # spk_model_revision="v2.0.2",
             disable_update=True
         )
         logger.info("FunASR模型初始化完成")
@@ -129,14 +130,14 @@ async def recognize_audio(
         
         try:
             logger.info(f"开始识别音频文件: {audio.filename}")
-            
+            torch.set_num_threads(4)
             # 调用模型进行识别
             res = model.generate(
                 input=temp_file_path,
                 batch_size_s=batch_size_s,
                 hotword=hotword if hotword else None
             )
-            
+            torch.set_num_threads(4)
             # 处理识别结果
             processed_results = process_recognition_result(res)
             

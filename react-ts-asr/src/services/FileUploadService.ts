@@ -52,7 +52,6 @@ export class FileUploadService {
       const result = await response.json();
       return result;
     } catch (error) {
-      console.error('文件上传识别失败:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : '未知错误'
@@ -71,7 +70,6 @@ export class FileUploadService {
       }
       return await response.json();
     } catch (error) {
-      console.error('健康检查失败:', error);
       throw error;
     }
   }

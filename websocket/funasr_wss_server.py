@@ -211,8 +211,22 @@ class AudioBuffer:
         self.processed_size = 0
         
     def get_buffer_size(self):
-        """获取当前缓冲区大小（字节）"""
+        """获取缓冲区大小"""
         return len(self.buffer)
+    
+    def is_likely_active(self):
+        """判断音频缓冲区是否可能包含活动语音"""
+        if len(self.buffer) < 320:  # 至少需要20ms的音频数据 (16kHz * 0.02s = 320 samples)
+            return False
+            
+        # 检查音频数据是否全为零
+        audio_array = np.frombuffer(self.buffer, dtype=np.int16)
+        if np.all(audio_array == 0):
+            return False
+            
+        # 简单的能量检测
+        energy = np.mean(np.abs(audio_array))
+        return energy > 100  # 设置一个较低的能量阈值
 
 
 def merge_stream_results(stream_results):
@@ -258,6 +272,7 @@ if memory_info:
 
 
 async def ws_reset(websocket):
+    """重置WebSocket连接状态"""
     print("ws reset now, total num is ", len(websocket_users))
 
     websocket.status_dict_asr_online["cache"] = {}
@@ -469,20 +484,25 @@ async def ws_serve(websocket, path):
 
 
 async def async_vad(websocket, audio_in):
+    try:
+        segments_result = model_vad.generate(input=audio_in, **websocket.status_dict_vad)[0]["value"]
+        # print(segments_result)
 
-    segments_result = model_vad.generate(input=audio_in, **websocket.status_dict_vad)[0]["value"]
-    # print(segments_result)
+        speech_start = -1
+        speech_end = -1
 
-    speech_start = -1
-    speech_end = -1
-
-    if len(segments_result) == 0 or len(segments_result) > 1:
+        if len(segments_result) == 0 or len(segments_result) > 1:
+            return speech_start, speech_end
+        if segments_result[0][0] != -1:
+            speech_start = segments_result[0][0]
+        if segments_result[0][1] != -1:
+            speech_end = segments_result[0][1]
         return speech_start, speech_end
-    if segments_result[0][0] != -1:
-        speech_start = segments_result[0][0]
-    if segments_result[0][1] != -1:
-        speech_end = segments_result[0][1]
-    return speech_start, speech_end
+            
+    except Exception as e:
+        print(f"VAD processing failed: {e}")
+        # 发生异常时，返回默认值
+        return -1, -1
 
 
 def split_audio_chunks(audio_data, chunk_size_mb=10):

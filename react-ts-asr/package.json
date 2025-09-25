@@ -15,7 +15,10 @@
     "antd": "^5.27.3",
     "axios": "^1.11.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "vditor": "^3.11.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",

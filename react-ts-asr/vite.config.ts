@@ -10,6 +10,18 @@ export default defineConfig({
     https: {
       key: '../ssl_key/server.key',
       cert: '../ssl_key/server.crt'
+    },
+    proxy: {
+      '/ollama': {
+        target: 'http://192.168.1.66:11434',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/ollama/, ''),
+        secure: false,
+        ws: true,
+        headers: {
+          'Origin': 'http://192.168.1.66:11434'
+        }
+      }
     }
   },
 })

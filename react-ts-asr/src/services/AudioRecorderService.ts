@@ -18,7 +18,7 @@ export interface RecordingResult {
 }
 
 export class AudioRecorderService {
-  private recorder: any;
+  // private _recorder: any; // 暂时注释掉未使用的字段
   private isRecording: boolean = false;
   private audioContext: AudioContext | null = null;
   private mediaStream: MediaStream | null = null;
@@ -42,8 +42,6 @@ export class AudioRecorderService {
     if (this.isRecording) return true;
 
     try {
-      console.log('AudioRecorder: 开始录音');
-      
       // 初始化录音数据收集
       this.recordedData = [];
       this.startTime = Date.now();
@@ -62,7 +60,6 @@ export class AudioRecorderService {
 
       // 使用浏览器默认采样率，通常是48000Hz
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      console.log('AudioRecorder: AudioContext采样率:', this.audioContext.sampleRate);
 
       this.audioInput = this.audioContext.createMediaStreamSource(this.mediaStream);
       this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
@@ -73,7 +70,6 @@ export class AudioRecorderService {
       this.processor.connect(this.audioContext.destination);
       
       this.isRecording = true;
-      console.log('AudioRecorder: 录音已开始');
       return true;
     } catch (error) {
       console.error('AudioRecorder: 启动录音失败:', error);
@@ -87,12 +83,10 @@ export class AudioRecorderService {
 
   public stop(): RecordingResult | null {
     if (!this.isRecording) {
-      console.warn('AudioRecorder: 录音未开始，无法停止');
       return null;
     }
 
     try {
-      console.log('AudioRecorder: 停止录音');
       this.isRecording = false;
       
       // 计算录音时长
@@ -110,8 +104,6 @@ export class AudioRecorderService {
       // 使用目标采样率创建WAV格式的Blob
       const sampleRate = this.config.sampleRate || 16000;
       const blob = this.createWavBlob(mergedData, sampleRate);
-      
-      console.log('AudioRecorder: 录音完成，时长:', duration, '秒，数据长度:', mergedData.length, '采样率:', sampleRate);
       
       return {
         audioData: mergedData,
@@ -148,8 +140,6 @@ export class AudioRecorderService {
     const srcSampleRate = inputBuffer.sampleRate;
     const targetSampleRate = this.config.sampleRate || 16000;
     
-    console.log('AudioRecorder: 处理音频数据，长度:', inputData.length, '源采样率:', srcSampleRate, '目标采样率:', targetSampleRate);
-    
     // 重采样到目标采样率
     const resampledData = this.resampleAudio(inputData, srcSampleRate, targetSampleRate);
     
@@ -162,19 +152,14 @@ export class AudioRecorderService {
     // 计算音量
     const powerLevel = this.calculatePowerLevel(inputData);
     
-    console.log('AudioRecorder: 重采样后长度:', resampledData.length, 'PCM数据长度:', pcmData.length, '音量级别:', powerLevel.toFixed(3));
-    
     // 调用回调函数
     if (this.config.onProcess) {
-      console.log('AudioRecorder: 调用回调函数');
       this.config.onProcess(
         pcmData,
         powerLevel,
         inputBuffer.duration * (targetSampleRate / srcSampleRate),
         targetSampleRate
       );
-    } else {
-      console.warn('AudioRecorder: 回调函数未设置');
     }
   }
 
