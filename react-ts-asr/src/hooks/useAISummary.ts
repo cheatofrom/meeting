@@ -83,11 +83,14 @@ export const useAISummary = () => {
 
     try {
       const meetingContent = editedResults.map(result =>
-        `${result.speaker}: ${result.text}`
+        `[${result.time_range || result.startTime || result.start_time || '未知时间'}] ${result.speaker}: ${result.text}`
       ).join('\n');
       
+      // 更新系统提示词，强调时间线的重要性
+      const enhancedSystemPrompt = `${systemPrompt} 请特别注意会议的时间线，按照时间顺序整理讨论内容，并标注关键时间点。`;
+      
       // 构建完整的提示词
-      const fullPrompt = `${systemPrompt}\n\n${userPrompt}\n\n会议内容:\n${meetingContent}`;
+      const fullPrompt = `${enhancedSystemPrompt}\n\n${userPrompt}\n\n会议内容:\n${meetingContent}`;
       // 打印调试信息
       console.log('传给AI模型的内容(fullPrompt):');
       console.log(fullPrompt);
