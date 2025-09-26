@@ -37,7 +37,7 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
     {
       id: 'default',
       name: '默认会议纪要',
-      systemPrompt: '你是一个专业的会议纪要助手，擅长分析会议内容并生成结构化的总结。请以专业、客观的语调进行总结，确保信息准确、条理清晰。',
+      systemPrompt: '你是一个专业的会议纪要助手，擅长分析会议内容并生成结构化的总结。请以专业、客观的语调进行总结，按照时间戳进行排版，确保信息准确、条理清晰。',
       userPrompt: '请对以下会议内容进行总结，提取关键信息、决策事项和行动计划：',
       description: '标准的会议纪要生成模板'
     },
@@ -45,7 +45,7 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
       id: 'detailed',
       name: '详细会议报告',
       systemPrompt: '你是一位资深的会议秘书，具有丰富的会议记录和总结经验。你需要生成详细、完整的会议报告，包含所有重要信息和细节。',
-      userPrompt: '请生成一份详细的会议报告，包括：1）会议概述 2）详细议程和讨论内容 3）关键决策和投票结果 4）行动计划和责任人 5）后续跟进事项。请确保报告结构清晰，信息完整：',
+      userPrompt: '请生成一份详细的会议报告，包括：1）会议概述 2）详细议程和讨论内容（包括时间完整线） 3）关键决策和投票结果 4）行动计划和责任人 5）后续跟进事项。请确保报告结构清晰，信息完整：',
       description: '生成详细完整的会议报告'
     },
     {

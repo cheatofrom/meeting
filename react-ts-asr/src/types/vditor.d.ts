@@ -11,6 +11,7 @@ declare module 'vditor' {
       enable: boolean;
     };
     after?: () => void;
+    customWysiwygToolbar?: () => void;
   }
 
   export default class Vditor {

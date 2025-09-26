@@ -104,46 +104,60 @@ export const AISummaryPanel: React.FC<AISummaryPanelProps> = ({
             {
               key: 'notes',
               label: (
-                <span>
+                <span id="notes-tab">
                   <FileTextOutlined />
                   笔记
                 </span>
               ),
               children: (
-                <NotesTab
-                  notes={notes}
-                  setNotes={setNotes}
-                  onSaveNotes={onSaveNotes}
-                />
+                <div
+                  role="tabpanel"
+                  aria-labelledby="notes-tab"
+                  aria-hidden={activeTab !== 'notes'}
+                  inert={activeTab !== 'notes'}
+                >
+                  <NotesTab
+                    notes={notes}
+                    setNotes={setNotes}
+                    onSaveNotes={onSaveNotes}
+                  />
+                </div>
               )
             },
             {
               key: 'ai-summary',
               label: (
-                <span>
+                <span id="ai-summary-tab">
                   <BulbOutlined />
                   AI纪要
                 </span>
               ),
               children: (
-                <AISummaryTab
-                  aiModel={aiModel}
-                  setAiModel={setAiModel}
-                  availableModels={availableModels}
-                  systemPrompt={systemPrompt}
-                  setSystemPrompt={setSystemPrompt}
-                  userPrompt={userPrompt}
-                  setUserPrompt={setUserPrompt}
-                  aiSummaryResult={aiSummaryResult}
-                  isGeneratingAI={isGeneratingAI}
-                  editedResults={editedResults}
-                  aiSummaryResultRef={aiSummaryResultRef}
-                  onOpenPromptModal={handleOpenPromptModal}
-                  onGenerateAISummary={onGenerateAISummary}
-                  onSaveAISummary={onSaveAISummary}
-                  onCopyAISummary={onCopyAISummary}
-                  onImportSummaryToNotes={onImportSummaryToNotes}
-                />
+                <div
+                  role="tabpanel"
+                  aria-labelledby="ai-summary-tab"
+                  aria-hidden={activeTab !== 'ai-summary'}
+                  inert={activeTab !== 'ai-summary'}
+                >
+                  <AISummaryTab
+                    aiModel={aiModel}
+                    setAiModel={setAiModel}
+                    availableModels={availableModels}
+                    systemPrompt={systemPrompt}
+                    setSystemPrompt={setSystemPrompt}
+                    userPrompt={userPrompt}
+                    setUserPrompt={setUserPrompt}
+                    aiSummaryResult={aiSummaryResult}
+                    isGeneratingAI={isGeneratingAI}
+                    editedResults={editedResults}
+                    aiSummaryResultRef={aiSummaryResultRef}
+                    onOpenPromptModal={handleOpenPromptModal}
+                    onGenerateAISummary={onGenerateAISummary}
+                    onSaveAISummary={onSaveAISummary}
+                    onCopyAISummary={onCopyAISummary}
+                    onImportSummaryToNotes={onImportSummaryToNotes}
+                  />
+                </div>
               )
             }
           ]}

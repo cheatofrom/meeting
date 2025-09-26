@@ -14,6 +14,11 @@ export const NotesTab: React.FC<NotesTabProps> = ({
   setNotes,
   onSaveNotes
 }) => {
+  const debugSetNotes = (newNotes: string) => {
+    console.log('NotesTab: setNotes called', { newNotes, currentNotes: notes });
+    setNotes(newNotes);
+  };
+
   return (
     <div style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column', paddingBottom: '24px' }}>
       <div style={{ marginBottom: '12px' }}>
@@ -46,7 +51,7 @@ export const NotesTab: React.FC<NotesTabProps> = ({
         }}>
           <MilkdownEditor
             value={notes}
-            onChange={setNotes}
+            onChange={debugSetNotes}
             placeholder="在此记录会议笔记..."
           />
         </div>

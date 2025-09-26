@@ -1,5 +1,8 @@
 import { App } from 'antd';
 
+import { marked } from 'marked';
+
+
 export const useFileExport = () => {
   const { message: messageApi } = App.useApp();
 
@@ -55,10 +58,46 @@ export const useFileExport = () => {
     document.body.removeChild(link);
     messageApi.success('音频文件已下载');
   };
+const saveMarkdownAsWord = async (markdown: string) => {
+  try {
+    const convertedHtml = marked.parse(markdown);
 
+    const fullHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; }
+            h1, h2, h3 { color: #333; }
+            code { background-color: #f4f4f4; padding: 2px 4px; border-radius: 4px; }
+            pre { background-color: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; }
+          </style>
+        </head>
+        <body>${convertedHtml}</body>
+      </html>
+    `;
+    console.log('Full HTML for DOCX conversion:', fullHtml);
+    const docx = await htmlDocx.asBlob(fullHtml, { orientation: 'portrait' }) as Blob;
+    const url = URL.createObjectURL(docx);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `meeting_notes_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    messageApi.success('笔记已导出为 Word 文档');
+  } catch (error) {
+    console.error('文档导出失败:', error);
+    messageApi.error('文档导出失败');
+  }
+};
   return {
     saveResultsToFile,
     copyResults,
-    downloadAudio
+    downloadAudio,
+    saveMarkdownAsWord
   };
 };

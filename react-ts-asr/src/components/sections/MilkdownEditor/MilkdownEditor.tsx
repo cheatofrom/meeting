@@ -20,6 +20,7 @@ export const MilkdownEditor: React.FC<MilkdownEditorProps> = ({
 
   // Stable onChange callback to prevent unnecessary re-renders
   const handleChange = useCallback((inputValue: string) => {
+    console.log('MilkdownEditor: handleChange called', { inputValue });
     currentValue.current = inputValue;
     onChange?.(inputValue);
   }, [onChange]);
@@ -51,22 +52,14 @@ export const MilkdownEditor: React.FC<MilkdownEditorProps> = ({
           'line',
           'code',
           'inline-code',
-          'insert-before',
-          'insert-after',
-          '|',
-          'table',
           '|',
           'undo',
-          'redo',
-          '|',
-          'edit-mode',
-          'outline',
-          'preview',
-          'fullscreen'
+          'redo'
         ],
         cache: {
           enable: false
         },
+        customWysiwygToolbar: undefined,
         after: () => {
           isInitialized.current = true;
           // Set initial value after initialization is complete
@@ -81,12 +74,13 @@ export const MilkdownEditor: React.FC<MilkdownEditorProps> = ({
     return () => {
       if (vditorInstance.current) {
         try {
-          // Check if the instance is still valid before destroying
-          if (vditorInstance.current && typeof vditorInstance.current.destroy === 'function') {
+          // Safely destroy Vditor instance
+          if (typeof vditorInstance.current.destroy === 'function') {
+            // Attempt to remove event listeners and clear references
             vditorInstance.current.destroy();
           }
         } catch (error) {
-          console.warn('Error destroying Vditor instance:', error);
+          console.error('Error destroying Vditor instance:', error);
         } finally {
           vditorInstance.current = null;
           isInitialized.current = false;

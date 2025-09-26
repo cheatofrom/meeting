@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { App } from 'antd';
+import { useFileExport } from './useFileExport';
 
 export const useAISummary = () => {
   const { message: messageApi } = App.useApp();
+  const { saveMarkdownAsWord } = useFileExport();
   const [showAISummary, setShowAISummary] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'notes' | 'ai-summary'>('notes');
   const [notes, setNotes] = useState<string>('');
@@ -270,16 +272,7 @@ export const useAISummary = () => {
   };
 
   const saveNotes = () => {
-    const blob = new Blob([notes], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `meeting_notes_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    messageApi.success('笔记已保存');
+    saveMarkdownAsWord(notes);
   };
 
   // Helper function to remove think tags from content
@@ -317,7 +310,6 @@ export const useAISummary = () => {
     // Remove thinking process content before importing
     const cleanedContent = removeThinkTags(aiSummaryResult);
 
-    // 直接设置 Markdown 内容，让 Milkdown 编辑器处理
     setNotes(cleanedContent);
     setActiveTab('notes');
     messageApi.success('AI总结已导入到笔记');
