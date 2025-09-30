@@ -1,18 +1,29 @@
 import { useState, useRef } from 'react';
 import { App } from 'antd';
 import { AudioRecorderService, type RecordingResult } from '../services/AudioRecorderService';
+import { SystemAudioRecorderService, type SystemRecordingResult } from '../services/SystemAudioRecorderService';
+
+export type RecordingMode = 'microphone' | 'system';
 
 export const useAudioRecording = (onAudioProcess: (buffer: Int16Array, powerLevel: number, bufferDuration: number, bufferSampleRate: number) => void) => {
   const { message: messageApi } = App.useApp();
   const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [recordedAudio, setRecordedAudio] = useState<RecordingResult | null>(null);
+  const [recordedAudio, setRecordedAudio] = useState<RecordingResult | SystemRecordingResult | null>(null);
   const [audioUrl, setAudioUrl] = useState<string>('');
+  const [recordingMode, setRecordingMode] = useState<RecordingMode>('microphone');
   const audioRecorderRef = useRef<AudioRecorderService | null>(null);
+  const systemAudioRecorderRef = useRef<SystemAudioRecorderService | null>(null);
 
   const initRecorder = () => {
-    audioRecorderRef.current = new AudioRecorderService({
-      onProcess: onAudioProcess
-    });
+    if (recordingMode === 'microphone') {
+      audioRecorderRef.current = new AudioRecorderService({
+        onProcess: onAudioProcess
+      });
+    } else {
+      systemAudioRecorderRef.current = new SystemAudioRecorderService({
+        onProcess: onAudioProcess
+      });
+    }
   };
 
   const startRecording = async (isConnected: boolean) => {
@@ -21,18 +32,34 @@ export const useAudioRecording = (onAudioProcess: (buffer: Int16Array, powerLeve
       return;
     }
 
-    if (!audioRecorderRef.current) {
+    // 确保录音器已初始化
+    if (!audioRecorderRef.current && !systemAudioRecorderRef.current) {
+      console.log('useAudioRecording: 初始化录音器...');
+      initRecorder();
+    }
+
+    const currentRecorder = recordingMode === 'microphone' 
+      ? audioRecorderRef.current 
+      : systemAudioRecorderRef.current;
+
+    if (!currentRecorder) {
+      console.error('useAudioRecording: 录音器未初始化');
+      messageApi.error('录音器初始化失败');
       return;
     }
 
+    console.log(`useAudioRecording: 开始${recordingMode}录音...`);
+
     try {
-      const success = await audioRecorderRef.current.start();
+      const success = await currentRecorder.start();
 
       if (success) {
         setIsRecording(true);
-        messageApi.success('开始录音');
+        const modeText = recordingMode === 'microphone' ? '麦克风录音' : '系统录音';
+        messageApi.success(`开始${modeText}`);
       } else {
-        messageApi.error('启动录音失败');
+        const modeText = recordingMode === 'microphone' ? '麦克风录音' : '系统录音';
+        messageApi.error(`启动${modeText}失败`);
       }
     } catch (error) {
       console.error('录音启动异常:', error);
@@ -41,8 +68,12 @@ export const useAudioRecording = (onAudioProcess: (buffer: Int16Array, powerLeve
   };
 
   const stopRecording = () => {
-    if (audioRecorderRef.current) {
-      const result = audioRecorderRef.current.stop();
+    const currentRecorder = recordingMode === 'microphone' 
+      ? audioRecorderRef.current 
+      : systemAudioRecorderRef.current;
+
+    if (currentRecorder) {
+      const result = currentRecorder.stop();
       setIsRecording(false);
 
       if (result) {
@@ -55,7 +86,8 @@ export const useAudioRecording = (onAudioProcess: (buffer: Int16Array, powerLeve
 
           const newAudioUrl = URL.createObjectURL(result.blob);
           setAudioUrl(newAudioUrl);
-          messageApi.success(`录音完成！时长: ${result.duration.toFixed(1)}秒`);
+          const modeText = recordingMode === 'microphone' ? '麦克风录音' : '系统录音';
+          messageApi.success(`${modeText}完成！时长: ${result.duration.toFixed(1)}秒`);
         }
       }
     }
@@ -71,13 +103,28 @@ export const useAudioRecording = (onAudioProcess: (buffer: Int16Array, powerLeve
   };
 
   const getRecordingState = () => {
-    return audioRecorderRef.current?.getRecordingState() || false;
+    const currentRecorder = recordingMode === 'microphone' 
+      ? audioRecorderRef.current 
+      : systemAudioRecorderRef.current;
+    return currentRecorder?.getRecordingState() || false;
+  };
+
+  const switchRecordingMode = (mode: RecordingMode) => {
+    if (isRecording) {
+      messageApi.warning('请先停止当前录音再切换模式');
+      return;
+    }
+    setRecordingMode(mode);
+    // 清理之前的录音器实例
+    audioRecorderRef.current = null;
+    systemAudioRecorderRef.current = null;
   };
 
   return {
     isRecording,
     recordedAudio,
     audioUrl,
+    recordingMode,
     setRecordedAudio,
     setAudioUrl,
     initRecorder,
@@ -85,6 +132,8 @@ export const useAudioRecording = (onAudioProcess: (buffer: Int16Array, powerLeve
     stopRecording,
     clearAudio,
     getRecordingState,
-    audioRecorderRef
+    switchRecordingMode,
+    audioRecorderRef,
+    systemAudioRecorderRef
   };
 };

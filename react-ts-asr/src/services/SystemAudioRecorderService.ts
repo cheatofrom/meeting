@@ -3,32 +3,31 @@
  * Reserved. MIT License  (https://opensource.org/licenses/MIT)
  */
 
-export interface AudioRecorderConfig {
+export interface SystemAudioRecorderConfig {
   onProcess?: (buffer: Int16Array, powerLevel: number, bufferDuration: number, bufferSampleRate: number) => void;
   sampleRate?: number;
   bitRate?: number;
   type?: string;
 }
 
-export interface RecordingResult {
+export interface SystemRecordingResult {
   audioData: Int16Array;
   duration: number;
   sampleRate: number;
   blob?: Blob;
 }
 
-export class AudioRecorderService {
-  // private _recorder: any; // 暂时注释掉未使用的字段
+export class SystemAudioRecorderService {
   private isRecording: boolean = false;
   private audioContext: AudioContext | null = null;
   private mediaStream: MediaStream | null = null;
   private audioInput: MediaStreamAudioSourceNode | null = null;
   private processor: ScriptProcessorNode | null = null;
-  private config: AudioRecorderConfig;
+  private config: SystemAudioRecorderConfig;
   private recordedData: Int16Array[] = []; // 存储录音数据
   private startTime: number = 0; // 录音开始时间
 
-  constructor(config: AudioRecorderConfig = {}) {
+  constructor(config: SystemAudioRecorderConfig = {}) {
     this.config = {
       sampleRate: 16000,
       bitRate: 16,
@@ -46,23 +45,57 @@ export class AudioRecorderService {
       this.recordedData = [];
       this.startTime = Date.now();
       
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('浏览器不支持录音功能');
+      console.log('SystemAudioRecorder: 开始初始化系统录音...');
+      
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        console.error('SystemAudioRecorder: 浏览器不支持 getDisplayMedia API');
+        throw new Error('浏览器不支持系统录音功能');
       }
 
-      this.mediaStream = await navigator.mediaDevices.getUserMedia({
+      console.log('SystemAudioRecorder: 请求系统音频权限...');
+      
+      // 使用 getDisplayMedia 录制系统音频
+      this.mediaStream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          width: 1,
+          height: 1,
+          frameRate: 1
+        },
         audio: {
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true
-        }
+          channelCount: 2,
+          noiseSuppression: false,
+          autoGainControl: false,
+          echoCancellation: false
+        } as any // 使用 any 类型避免 TypeScript 类型检查问题
+      });
+
+      console.log('SystemAudioRecorder: 成功获取媒体流', this.mediaStream);
+
+      // 检查是否成功获取音频轨道
+      const audioTracks = this.mediaStream.getAudioTracks();
+      console.log('SystemAudioRecorder: 音频轨道数量:', audioTracks.length);
+      
+      if (audioTracks.length === 0) {
+        console.error('SystemAudioRecorder: 未获取到音频轨道');
+        throw new Error('未能获取系统音频轨道，请确保选择了包含音频的屏幕或应用');
+      }
+
+      // 监听轨道结束事件
+      audioTracks.forEach((track, index) => {
+        console.log(`SystemAudioRecorder: 音频轨道 ${index}:`, track.label, track.enabled);
+        track.onended = () => {
+          console.log('SystemAudioRecorder: 音频轨道已结束');
+          this.stop();
+        };
       });
 
       // 使用浏览器默认采样率，通常是48000Hz
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      console.log('SystemAudioRecorder: AudioContext 采样率:', this.audioContext.sampleRate);
 
       this.audioInput = this.audioContext.createMediaStreamSource(this.mediaStream);
-      this.processor = this.audioContext.createScriptProcessor(1024, 1, 1); // 减小缓冲区以提高实时性
+      // 使用更小的缓冲区以提高实时性，与麦克风录音保持一致
+      this.processor = this.audioContext.createScriptProcessor(1024, 1, 1);
       
       this.processor.onaudioprocess = (e) => this.onAudioProcess(e);
       
@@ -70,9 +103,21 @@ export class AudioRecorderService {
       this.processor.connect(this.audioContext.destination);
       
       this.isRecording = true;
+      console.log('SystemAudioRecorder: 系统录音启动成功');
       return true;
     } catch (error) {
-      console.error('AudioRecorder: 启动录音失败:', error);
+      console.error('SystemAudioRecorder: 启动系统录音失败:', error);
+      
+      // 清理可能已创建的资源
+      if (this.mediaStream) {
+        this.mediaStream.getTracks().forEach(track => track.stop());
+        this.mediaStream = null;
+      }
+      if (this.audioContext) {
+        this.audioContext.close();
+        this.audioContext = null;
+      }
+      
       return false;
     }
   }
@@ -81,7 +126,7 @@ export class AudioRecorderService {
     return this.isRecording;
   }
 
-  public stop(): RecordingResult | null {
+  public stop(): SystemRecordingResult | null {
     if (!this.isRecording) {
       return null;
     }
@@ -132,14 +177,16 @@ export class AudioRecorderService {
     }
   }
 
-  private onAudioProcess(e: AudioProcessingEvent): void {
+  private onAudioProcess(event: AudioProcessingEvent): void {
     if (!this.isRecording) return;
-    
-    const inputBuffer = e.inputBuffer;
-    const inputData = inputBuffer.getChannelData(0);
-    const srcSampleRate = inputBuffer.sampleRate;
+
+    const inputBuffer = event.inputBuffer;
+    const srcSampleRate = this.audioContext?.sampleRate || 48000;
     const targetSampleRate = this.config.sampleRate || 16000;
     
+    // 直接使用第一个通道的数据，与麦克风录音保持一致
+    const inputData = inputBuffer.getChannelData(0);
+
     // 重采样到目标采样率
     const resampledData = this.resampleAudio(inputData, srcSampleRate, targetSampleRate);
     
@@ -150,14 +197,16 @@ export class AudioRecorderService {
     this.recordedData.push(pcmData);
     
     // 计算音量
-    const powerLevel = this.calculatePowerLevel(inputData);
+    const powerLevel = this.calculateVolume(resampledData);
     
-    // 调用回调函数
+    // 调用回调函数 - 使用与麦克风录音相同的持续时间计算方式
     if (this.config.onProcess) {
+      // 使用与麦克风录音相同的持续时间计算方式
+      const bufferDuration = inputBuffer.duration * (targetSampleRate / srcSampleRate);
       this.config.onProcess(
         pcmData,
         powerLevel,
-        inputBuffer.duration * (targetSampleRate / srcSampleRate),
+        bufferDuration,
         targetSampleRate
       );
     }
@@ -174,71 +223,89 @@ export class AudioRecorderService {
     return output;
   }
 
-  private calculatePowerLevel(buffer: Float32Array): number {
-    let sum = 0;
-    for (let i = 0; i < buffer.length; i++) {
-      sum += buffer[i] * buffer[i];
-    }
-    const rms = Math.sqrt(sum / buffer.length);
-    return Math.max(0, Math.min(1, rms * 10)); // 归一化到0-1范围
-  }
-
-  // 音频重采样方法，参考HTML5版本的实现
   private resampleAudio(audioData: Float32Array, srcSampleRate: number, targetSampleRate: number): Float32Array {
     if (srcSampleRate === targetSampleRate) {
       return audioData;
     }
-    
+
     const ratio = srcSampleRate / targetSampleRate;
     const newLength = Math.round(audioData.length / ratio);
     const result = new Float32Array(newLength);
-    
+
     for (let i = 0; i < newLength; i++) {
       const srcIndex = i * ratio;
       const srcIndexFloor = Math.floor(srcIndex);
       const srcIndexCeil = Math.min(srcIndexFloor + 1, audioData.length - 1);
       const fraction = srcIndex - srcIndexFloor;
-      
+
       // 线性插值
       result[i] = audioData[srcIndexFloor] * (1 - fraction) + audioData[srcIndexCeil] * fraction;
     }
-    
+
     return result;
   }
 
-  private createWavBlob(audioData: Int16Array, sampleRate: number): Blob {
-    const length = audioData.length;
-    const buffer = new ArrayBuffer(44 + length * 2);
-    const view = new DataView(buffer);
+  private calculateVolume(audioData: Float32Array): number {
+    if (audioData.length === 0) return 0;
     
-    // WAV文件头
-    const writeString = (offset: number, string: string) => {
-      for (let i = 0; i < string.length; i++) {
-        view.setUint8(offset + i, string.charCodeAt(i));
-      }
-    };
-    
-    writeString(0, 'RIFF');
-    view.setUint32(4, 36 + length * 2, true);
-    writeString(8, 'WAVE');
-    writeString(12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, 1, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * 2, true);
-    view.setUint16(32, 2, true);
-    view.setUint16(34, 16, true);
-    writeString(36, 'data');
-    view.setUint32(40, length * 2, true);
-    
-    // 写入音频数据
-    let offset = 44;
-    for (let i = 0; i < length; i++) {
-      view.setInt16(offset, audioData[i], true);
-      offset += 2;
+    let sum = 0;
+    for (let i = 0; i < audioData.length; i++) {
+      sum += audioData[i] * audioData[i];
     }
     
+    const rms = Math.sqrt(sum / audioData.length);
+    return Math.min(rms * 10, 1); // 归一化到0-1范围
+  }
+
+  private createWavBlob(audioData: Int16Array, sampleRate: number): Blob {
+    const buffer = this.pcmToWav(audioData, sampleRate);
     return new Blob([buffer], { type: 'audio/wav' });
+  }
+
+  private pcmToWav(audioData: Int16Array, sampleRate: number): ArrayBuffer {
+    const dataLength = audioData.length * 2;
+    const buffer = new ArrayBuffer(44 + dataLength);
+    const view = new DataView(buffer);
+
+    // RIFF标识
+    this.writeString(view, 0, 'RIFF');
+    // 文件长度
+    view.setUint32(4, 36 + dataLength, true);
+    // WAVE标识
+    this.writeString(view, 8, 'WAVE');
+    // fmt子块标识
+    this.writeString(view, 12, 'fmt ');
+    // 子块长度
+    view.setUint32(16, 16, true);
+    // 音频格式（PCM = 1）
+    view.setUint16(20, 1, true);
+    // 通道数
+    view.setUint16(22, 1, true);
+    // 采样率
+    view.setUint32(24, sampleRate, true);
+    // 字节率 = 采样率 * 通道数 * 位深度 / 8
+    view.setUint32(28, sampleRate * 2, true);
+    // 块对齐 = 通道数 * 位深度 / 8
+    view.setUint16(32, 2, true);
+    // 位深度
+    view.setUint16(34, 16, true);
+    // data子块标识
+    this.writeString(view, 36, 'data');
+    // 数据长度
+    view.setUint32(40, dataLength, true);
+
+    // 写入PCM数据
+    const offset = 44;
+    for (let i = 0; i < audioData.length; i++) {
+      view.setInt16(offset + i * 2, audioData[i], true);
+    }
+
+    return buffer;
+  }
+
+  private writeString(view: DataView, offset: number, string: string): void {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
   }
 }

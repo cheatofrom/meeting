@@ -8,6 +8,7 @@ import { useSpeakerManagement } from '../hooks/useSpeakerManagement';
 import { useAISummary } from '../hooks/useAISummary';
 import { useFileExport } from '../hooks/useFileExport';
 import { useResizablePanels } from '../hooks/useResizablePanels';
+import { useMobilePanelState } from '../hooks/useMobilePanelState';
 import { ControlPanelSection } from './sections/ControlPanelSection';
 import { ResultPanelSection } from './sections/ResultPanelSection';
 import { AudioPlayerSection } from './sections/AudioPlayerSection';
@@ -15,6 +16,7 @@ import { RecognitionControlSection } from './sections/RecognitionControlSection'
 import { RecognitionResultsSection } from './sections/RecognitionResultsSection';
 import { SpeakerReplaceModal } from './sections/SpeakerReplaceModal';
 import { AISummaryPanel } from './sections/AISummaryPanel';
+import MobilePanelSwitcher from './sections/MobilePanelSwitcher';
 import '../styles/ASRComponent.css';
 
 const { Title } = Typography;
@@ -28,10 +30,16 @@ const ASRComponent: React.FC<ASRComponentProps> = ({
 }) => {
   const [useITN, setUseITN] = useState<boolean>(true);
   const [hotwords, setHotwords] = useState<string>('');
+  const [recordingMode, setRecordingMode] = useState<'microphone' | 'system'>('microphone');
 
-  const wsConnection = useWebSocketConnection(defaultServerUrl, hotwords);
+  const wsConnection = useWebSocketConnection(defaultServerUrl, hotwords, recordingMode);
 
   const audioRecording = useAudioRecording(wsConnection.handleAudioProcess);
+
+  // 同步录音模式状态
+  useEffect(() => {
+    setRecordingMode(audioRecording.recordingMode);
+  }, [audioRecording.recordingMode]);
 
   const fileUpload = useFileUpload();
 
@@ -45,6 +53,8 @@ const ASRComponent: React.FC<ASRComponentProps> = ({
 
   const { leftWidth, rightWidth, isDragging, containerRef, handleMouseDown } = useResizablePanels(65);
 
+  const mobilePanelState = useMobilePanelState();
+
   useEffect(() => {
     audioRecording.initRecorder();
 
@@ -56,7 +66,18 @@ const ASRComponent: React.FC<ASRComponentProps> = ({
     };
   }, []);
 
+  // 监听状态变化，更新移动端面板状态
+  useEffect(() => {
+    mobilePanelState.updatePanelState(
+      audioRecording.audioUrl || '',
+      audioRecording.isRecording,
+      voiceRecognition.editedResults.length > 0,
+      aiSummary.showAISummary
+    );
+  }, [audioRecording.audioUrl, audioRecording.isRecording, voiceRecognition.editedResults.length, aiSummary.showAISummary]);
+
   const handleStartRecording = async () => {
+    console.log('ASRComponent: 开始录音按钮被点击');
     wsConnection.resetSampleBuffer();
     await audioRecording.startRecording(wsConnection.isConnected);
   };
@@ -72,63 +93,85 @@ const ASRComponent: React.FC<ASRComponentProps> = ({
   };
 
   return (
-    <div className={`asr-container ${aiSummary.showAISummary ? 'show-summary' : ''} ${isDragging ? 'dragging' : ''}`} ref={containerRef}>
+    <div className={`asr-container ${aiSummary.showAISummary ? 'show-summary' : ''} ${isDragging ? 'dragging' : ''} ${mobilePanelState.showPanelSwitcher ? 'mobile-panel-mode' : ''}`} ref={containerRef}>
       <div className="main-content" style={{ width: `${leftWidth}%` }}>
         <Card className="asr-card">
           <Title level={2}>AI会议纪要</Title>
 
-          <ControlPanelSection
-            useITN={useITN}
-            setUseITN={setUseITN}
-            hotwords={hotwords}
-            setHotwords={setHotwords}
-            isConnected={wsConnection.isConnected}
-            isRecording={audioRecording.isRecording}
-            onConnect={wsConnection.connectWebSocket}
-            onDisconnect={wsConnection.disconnectWebSocket}
-            onStartRecording={handleStartRecording}
-            onStopRecording={audioRecording.stopRecording}
-            onFileUpload={handleFileUpload}
-            onClearText={wsConnection.clearRecognitionText}
-          />
+          {/* 移动端面板切换器 */}
+          {mobilePanelState.showPanelSwitcher && (
+            <MobilePanelSwitcher
+              currentPanel={mobilePanelState.currentPanel}
+              onPanelSwitch={mobilePanelState.switchToPanel}
+              hasAudio={!!audioRecording.audioUrl}
+              hasResults={voiceRecognition.editedResults.length > 0}
+              showAISummary={aiSummary.showAISummary}
+            />
+          )}
 
-          <ResultPanelSection
-            recognitionText={wsConnection.recognitionText}
-          />
+          {/* 桌面端显示所有面板，移动端根据当前面板显示 */}
+          {(!mobilePanelState.showPanelSwitcher || mobilePanelState.currentPanel === 'recording') && (
+            <>
+              <ControlPanelSection
+                useITN={useITN}
+                setUseITN={setUseITN}
+                hotwords={hotwords}
+                setHotwords={setHotwords}
+                isConnected={wsConnection.isConnected}
+                isRecording={audioRecording.isRecording}
+                recordingMode={audioRecording.recordingMode}
+                onConnect={wsConnection.connectWebSocket}
+                onDisconnect={wsConnection.disconnectWebSocket}
+                onStartRecording={handleStartRecording}
+                onStopRecording={audioRecording.stopRecording}
+                onFileUpload={handleFileUpload}
+                onClearText={wsConnection.clearRecognitionText}
+                onSwitchRecordingMode={audioRecording.switchRecordingMode}
+              />
 
-          <AudioPlayerSection
-            audioUrl={audioRecording.audioUrl}
-            recordedAudio={audioRecording.recordedAudio}
-            onDownload={() => fileExport.downloadAudio(audioRecording.audioUrl)}
-            onClear={audioRecording.clearAudio}
-          />
+              <ResultPanelSection
+                recognitionText={wsConnection.recognitionText}
+              />
 
-          <RecognitionControlSection
-            audioUrl={audioRecording.audioUrl}
-            batchSizeS={voiceRecognition.batchSizeS}
-            setBatchSizeS={voiceRecognition.setBatchSizeS}
-            recognitionHotword={voiceRecognition.recognitionHotword}
-            setRecognitionHotword={voiceRecognition.setRecognitionHotword}
-            isRecognizing={voiceRecognition.isRecognizing}
-            recordedAudio={audioRecording.recordedAudio}
-            onRecognize={() => voiceRecognition.handleRecognizeAudio(audioRecording.recordedAudio)}
-          />
+              <AudioPlayerSection
+                audioUrl={audioRecording.audioUrl}
+                recordedAudio={audioRecording.recordedAudio}
+                onDownload={() => fileExport.downloadAudio(audioRecording.audioUrl)}
+                onClear={audioRecording.clearAudio}
+              />
+            </>
+          )}
 
-          <RecognitionResultsSection
-            editedResults={voiceRecognition.editedResults}
-            editingIndex={voiceRecognition.editingIndex}
-            editingText={voiceRecognition.editingText}
-            setEditingText={voiceRecognition.setEditingText}
-            onStartEdit={voiceRecognition.startEditText}
-            onSaveEdit={voiceRecognition.saveEditText}
-            onCancelEdit={voiceRecognition.cancelEdit}
-            onAISummary={aiSummary.handleAISummary}
-            onExportTxt={() => fileExport.saveResultsToFile(voiceRecognition.editedResults, 'txt')}
-            onExportJson={() => fileExport.saveResultsToFile(voiceRecognition.editedResults, 'json')}
-            onSpeakerClick={speakerManagement.openSpeakerReplace}
-            onCopyResults={() => fileExport.copyResults(voiceRecognition.editedResults)}
-            onClearResults={voiceRecognition.clearResults}
-          />
+          {(!mobilePanelState.showPanelSwitcher || mobilePanelState.currentPanel === 'recognition') && (
+            <>
+              <RecognitionControlSection
+                audioUrl={audioRecording.audioUrl}
+                batchSizeS={voiceRecognition.batchSizeS}
+                setBatchSizeS={voiceRecognition.setBatchSizeS}
+                recognitionHotword={voiceRecognition.recognitionHotword}
+                setRecognitionHotword={voiceRecognition.setRecognitionHotword}
+                isRecognizing={voiceRecognition.isRecognizing}
+                recordedAudio={audioRecording.recordedAudio}
+                onRecognize={() => voiceRecognition.handleRecognizeAudio(audioRecording.recordedAudio)}
+              />
+
+              <RecognitionResultsSection
+                editedResults={voiceRecognition.editedResults}
+                editingIndex={voiceRecognition.editingIndex}
+                editingText={voiceRecognition.editingText}
+                setEditingText={voiceRecognition.setEditingText}
+                onStartEdit={voiceRecognition.startEditText}
+                onSaveEdit={voiceRecognition.saveEditText}
+                onCancelEdit={voiceRecognition.cancelEdit}
+                onAISummary={aiSummary.handleAISummary}
+                onExportTxt={() => fileExport.saveResultsToFile(voiceRecognition.editedResults, 'txt')}
+                onExportJson={() => fileExport.saveResultsToFile(voiceRecognition.editedResults, 'json')}
+                onSpeakerClick={speakerManagement.openSpeakerReplace}
+                onCopyResults={() => fileExport.copyResults(voiceRecognition.editedResults)}
+                onClearResults={voiceRecognition.clearResults}
+              />
+            </>
+          )}
 
           <SpeakerReplaceModal
             visible={speakerManagement.speakerReplaceVisible}
@@ -173,6 +216,35 @@ const ASRComponent: React.FC<ASRComponentProps> = ({
             />
           </div>
         </>
+      )}
+
+      {/* 移动端AI总结面板 */}
+      {mobilePanelState.showPanelSwitcher && mobilePanelState.currentPanel === 'ai-summary' && aiSummary.showAISummary && (
+        <div className="mobile-ai-summary">
+          <AISummaryPanel
+            activeTab={aiSummary.activeTab}
+            setActiveTab={aiSummary.setActiveTab}
+            notes={aiSummary.notes}
+            setNotes={aiSummary.setNotes}
+            aiModel={aiSummary.aiModel}
+            setAiModel={aiSummary.setAiModel}
+            systemPrompt={aiSummary.systemPrompt}
+            setSystemPrompt={aiSummary.setSystemPrompt}
+            userPrompt={aiSummary.userPrompt}
+            setUserPrompt={aiSummary.setUserPrompt}
+            aiSummaryResult={aiSummary.aiSummaryResult}
+            isGeneratingAI={aiSummary.isGeneratingAI}
+            availableModels={aiSummary.availableModels}
+            editedResults={voiceRecognition.editedResults}
+            aiSummaryResultRef={aiSummary.aiSummaryResultRef as React.RefObject<HTMLDivElement>}
+            onClose={() => aiSummary.setShowAISummary(false)}
+            onSaveNotes={aiSummary.saveNotes}
+            onGenerateAISummary={() => aiSummary.generateAISummary(voiceRecognition.editedResults)}
+            onSaveAISummary={aiSummary.saveAISummary}
+            onCopyAISummary={aiSummary.copyAISummary}
+            onImportSummaryToNotes={aiSummary.importSummaryToNotes}
+          />
+        </div>
       )}
     </div>
   );

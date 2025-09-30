@@ -8,6 +8,7 @@ export interface WebSocketConfig {
   stateHandle: (state: number) => void;
   hotwords?: string;
   mode?: string;
+  recordingMode?: 'microphone' | 'system';
 }
 
 export interface ASRRequest {
@@ -133,11 +134,21 @@ export class WebSocketService {
   private onOpen(_e: Event): void {
     this.stateHandle(0); // 连接成功状态
     
+    // 延迟发送初始化配置，确保WebSocket完全处于OPEN状态
+    this.sendInitialConfigWithRetry();
+  }
+
+  private sendInitialConfigWithRetry(retryCount: number = 0, maxRetries: number = 3): void {
+    // 根据录音模式设置不同的配置
+    const recordingMode = this.config.recordingMode || 'microphone';
+    const wavName = recordingMode === 'system' ? 'system' : 'microphone';
+    const isSpeaking = recordingMode === 'system' ? false : true; // 系统录音初始不设为speaking状态
+    
     // 发送初始化配置
     const initialRequest = {
       "chunk_size": [5, 10, 5],
-      "wav_name": "microphone",
-      "is_speaking": true,
+      "wav_name": wavName,
+      "is_speaking": isSpeaking,
       "chunk_interval": 10,
       "itn": false,
       "mode": "2pass", // 固定使用2pass模式
@@ -146,10 +157,40 @@ export class WebSocketService {
       "hotwords": this.config.hotwords ? this.config.hotwords.split(',').map(w => w.trim()) : []
     };
     
-    try {
-      this.speechSocket?.send(JSON.stringify(initialRequest));
-    } catch (error) {
-      console.error('发送初始化配置失败:', error);
+    // 检查WebSocket连接状态
+    if (!this.speechSocket) {
+      console.error('WebSocket实例不存在，无法发送初始化配置');
+      return;
+    }
+    
+    if (this.speechSocket.readyState === WebSocket.OPEN) {
+      // WebSocket已完全打开，可以安全发送
+      try {
+        this.speechSocket.send(JSON.stringify(initialRequest));
+        console.log('初始化配置发送成功');
+      } catch (error) {
+        console.error('发送初始化配置失败:', error);
+        
+        // 如果还有重试次数，延迟重试
+        if (retryCount < maxRetries) {
+          console.log(`将在50ms后重试发送初始化配置 (${retryCount + 1}/${maxRetries})`);
+          setTimeout(() => {
+            this.sendInitialConfigWithRetry(retryCount + 1, maxRetries);
+          }, 50);
+        }
+      }
+    } else if (this.speechSocket.readyState === WebSocket.CONNECTING) {
+      // WebSocket仍在连接中，延迟重试
+      if (retryCount < maxRetries) {
+        console.log(`WebSocket仍在连接中，将在50ms后重试发送初始化配置 (${retryCount + 1}/${maxRetries})`);
+        setTimeout(() => {
+          this.sendInitialConfigWithRetry(retryCount + 1, maxRetries);
+        }, 50);
+      } else {
+        console.error('WebSocket连接超时，无法发送初始化配置');
+      }
+    } else {
+      console.error(`WebSocket状态异常 (${this.speechSocket.readyState})，无法发送初始化配置`);
     }
   }
 

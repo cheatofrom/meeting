@@ -1,12 +1,13 @@
 import React from 'react';
 import { Button, Space, Typography } from 'antd';
 import type { RecordingResult } from '../../services/AudioRecorderService';
+import type { SystemRecordingResult } from '../../services/SystemAudioRecorderService';
 
 const { Title } = Typography;
 
 interface AudioPlayerSectionProps {
   audioUrl: string;
-  recordedAudio: RecordingResult | null;
+  recordedAudio: RecordingResult | SystemRecordingResult | null;
   onDownload: () => void;
   onClear: () => void;
 }

@@ -306,10 +306,17 @@ async def ws_serve(websocket, path):
     websocket.sent_text_length = 0  # 初始化已发送文本长度计数器
     websocket.audio_buffer = AudioBuffer(max_buffer_size_mb=100)  # 添加音频缓冲区
     websocket.stream_results = []  # 存储流式识别结果
+    
+    # 强制发送机制配置
+    websocket.force_send_sample_threshold = 16000 * 5  # 5秒的音频样本数 (16kHz)
+    websocket.force_send_time_threshold = 5.0  # 5秒时间阈值
+    websocket.last_recognition_time = time.time()  # 上次识别时间
+    websocket.accumulated_samples = 0  # 累积的音频样本数
+    
     speech_start = False
     speech_end_i = -1
     websocket.wav_name = "microphone"
-    websocket.mode = "2pass"
+    websocket.mode = "online"
     websocket.is_file_upload = False  # 添加文件上传标识
     print("new user connected", flush=True)
 
@@ -321,9 +328,11 @@ async def ws_serve(websocket, path):
                 if "is_speaking" in messagejson:
                     websocket.is_speaking = messagejson["is_speaking"]
                     websocket.status_dict_asr_online["is_final"] = not websocket.is_speaking
-                    # 当用户开始说话时，重置已发送文本长度计数器
+                    # 当用户开始说话时，重置已发送文本长度计数器和强制发送计数器
                     if websocket.is_speaking:
                         websocket.sent_text_length = 0
+                        websocket.accumulated_samples = 0
+                        websocket.last_recognition_time = time.time()
                 if "chunk_interval" in messagejson:
                     websocket.chunk_interval = messagejson["chunk_interval"]
                 if "wav_name" in messagejson:
@@ -380,6 +389,9 @@ async def ws_serve(websocket, path):
                     duration_ms = len(message) // 32
                     websocket.vad_pre_idx += duration_ms
                     
+                    # 累积音频样本数用于强制发送机制
+                    websocket.accumulated_samples += len(message) // 2  # 16位音频，每个样本2字节
+                    
                     # 将音频数据添加到缓冲区
                     websocket.audio_buffer.add_chunk(message)
                     
@@ -387,15 +399,61 @@ async def ws_serve(websocket, path):
                     if websocket.audio_buffer.get_buffer_size() > 50 * 1024 * 1024:  # 50MB
                         clear_gpu_memory()
 
+                    # 初始化VAD检测变量
+                    speech_start_i = -1
+                    speech_end_i = -1
+                    
+                    # 先进行VAD检测
+                    try:
+                        speech_start_i, speech_end_i = await async_vad(websocket, message)
+                        # 添加VAD状态日志
+                        if speech_start_i != -1 or speech_end_i != -1:
+                            print(f"[VAD检测] 语音开始: {speech_start_i}, 语音结束: {speech_end_i}, 当前语音状态: {speech_start}")
+                    except Exception as e:
+                        print(f"error in vad: {e}")
+
                     # asr online - 流式识别处理
                     frames_asr_online.append(message)
                     websocket.status_dict_asr_online["is_final"] = speech_end_i != -1
                     
-                    # 流式处理：无论是否文件上传，都进行实时识别
-                    if (
-                        len(frames_asr_online) % websocket.chunk_interval == 0
+                    # 检查强制发送条件
+                    current_time = time.time()
+                    time_since_last_recognition = current_time - websocket.last_recognition_time
+                    force_send_by_samples = websocket.accumulated_samples >= websocket.force_send_sample_threshold
+                    force_send_by_time = time_since_last_recognition >= websocket.force_send_time_threshold
+                    
+                    # 检查音频活动性，避免对静音进行无意义识别
+                    audio_is_active = websocket.audio_buffer.is_likely_active() if hasattr(websocket, 'audio_buffer') else True
+                    
+                    # 增强VAD检测的权重：只有在检测到语音活动或语音结束时才进行在线识别
+                    # VAD检测到语音活动的条件
+                    vad_detected_speech = speech_start or speech_start_i != -1 or speech_end_i != -1
+                    
+                    # 流式处理：增强VAD检测的影响力
+                    # 只有在以下情况下才进行在线识别：
+                    # 1. VAD检测到语音活动 + chunk_interval
+                    # 2. VAD检测到语音结束
+                    # 3. VAD检测到语音活动 + 强制发送条件
+                    should_process = (
+                        (len(frames_asr_online) % websocket.chunk_interval == 0 and vad_detected_speech)
                         or websocket.status_dict_asr_online["is_final"]
-                    ):
+                        or (force_send_by_samples and audio_is_active and vad_detected_speech)
+                        or (force_send_by_time and audio_is_active and vad_detected_speech)
+                    )
+                    
+                    if should_process:
+                        trigger_reason = []
+                        if len(frames_asr_online) % websocket.chunk_interval == 0 and vad_detected_speech:
+                            trigger_reason.append(f"chunk_interval({websocket.chunk_interval})+VAD检测")
+                        if websocket.status_dict_asr_online["is_final"]:
+                            trigger_reason.append("VAD检测到语音结束")
+                        if force_send_by_samples and audio_is_active and vad_detected_speech:
+                            trigger_reason.append(f"样本数量达到阈值({websocket.accumulated_samples}/{websocket.force_send_sample_threshold})+VAD检测")
+                        if force_send_by_time and audio_is_active and vad_detected_speech:
+                            trigger_reason.append(f"时间达到阈值({time_since_last_recognition:.1f}s/{websocket.force_send_time_threshold}s)+VAD检测")
+                        
+                        print(f"[流式触发] 触发在线识别，原因: {', '.join(trigger_reason)}, 音频活跃: {audio_is_active}, VAD检测到语音: {vad_detected_speech}")
+                        
                         if websocket.mode == "2pass" or websocket.mode == "online":
                             audio_in = b"".join(frames_asr_online)
                             try:
@@ -403,6 +461,13 @@ async def ws_serve(websocket, path):
                                 # 存储流式识别结果
                                 if result and websocket.is_file_upload:
                                     websocket.stream_results.append(result)
+                                
+                                # 重置强制发送计数器
+                                if (force_send_by_samples and audio_is_active and vad_detected_speech) or (force_send_by_time and audio_is_active and vad_detected_speech):
+                                    print(f"[流式触发] 重置强制发送计数器 (VAD检测到语音活动)")
+                                    websocket.accumulated_samples = 0
+                                    websocket.last_recognition_time = current_time
+                                    
                             except Exception as e:
                                 print(f"error in asr streaming: {str(e)}")
                         frames_asr_online = []
@@ -415,16 +480,19 @@ async def ws_serve(websocket, path):
                     # vad online - 文件上传模式下也启用VAD检测以实现更好的流式处理
                     if speech_start:
                         frames_asr.append(message)
-                    try:
-                        speech_start_i, speech_end_i = await async_vad(websocket, message)
-                    except:
-                        print("error in vad")
+                    
+                    # 优化VAD处理：即使没有检测到明确的语音开始，也允许部分音频进入识别流程
+                    # 这样可以减少因VAD过于严格导致的延迟
                     if speech_start_i != -1:
                         speech_start = True
                         beg_bias = (websocket.vad_pre_idx - speech_start_i) // duration_ms
                         frames_pre = frames[-beg_bias:]
                         frames_asr = []
                         frames_asr.extend(frames_pre)
+                    elif not speech_start and len(frames_asr_online) > 0:
+                        # 如果在线识别缓冲区有数据但VAD没有检测到语音开始，
+                        # 仍然允许数据进入离线识别流程以提高实时性
+                        frames_asr.append(message)
                 # asr punc offline
                 if speech_end_i != -1 or not websocket.is_speaking:
                     # print("vad end point")
@@ -432,6 +500,9 @@ async def ws_serve(websocket, path):
                         audio_in = b"".join(frames_asr)
                         try:
                             await async_asr(websocket, audio_in)
+                            # 重置强制发送计数器（离线识别完成后）
+                            websocket.accumulated_samples = 0
+                            websocket.last_recognition_time = time.time()
                         except Exception as e:
                             print(f"error in asr offline: {str(e)}")
                             import traceback
@@ -485,7 +556,15 @@ async def ws_serve(websocket, path):
 
 async def async_vad(websocket, audio_in):
     try:
-        segments_result = model_vad.generate(input=audio_in, **websocket.status_dict_vad)[0]["value"]
+        # 添加更灵敏的VAD配置以提高实时性
+        vad_config = websocket.status_dict_vad.copy()
+        # 降低VAD阈值以提高敏感度，减少延迟
+        if 'speech_threshold' not in vad_config:
+            vad_config['speech_threshold'] = 0.3  # 降低语音检测阈值
+        if 'silence_threshold' not in vad_config:
+            vad_config['silence_threshold'] = 0.1  # 降低静音检测阈值
+        
+        segments_result = model_vad.generate(input=audio_in, **vad_config)[0]["value"]
         # print(segments_result)
 
         speech_start = -1
@@ -651,39 +730,60 @@ async def async_asr(websocket, audio_in):
 
 async def async_asr_online(websocket, audio_in):
     if len(audio_in) > 0:
-        # print(websocket.status_dict_asr_online.get("is_final", False))
+        # 检查音频是否有实际内容（避免处理静音）
+        audio_array = np.frombuffer(audio_in, dtype=np.int16)
+        audio_energy = np.mean(np.abs(audio_array))
+        
+        # 如果音频能量过低，跳过处理
+        if audio_energy < 50:  # 可调整的阈值
+            print(f"[在线识别] 音频能量过低({audio_energy:.1f})，跳过处理")
+            return None
+            
+        print(f"[在线识别] 处理音频数据: {len(audio_in)} bytes, 音频能量: {audio_energy:.1f}, is_final: {websocket.status_dict_asr_online.get('is_final', False)}")
+        
+        # 记录开始时间
+        start_time = time.time()
+        
         rec_result = model_asr_streaming.generate(
             input=audio_in, **websocket.status_dict_asr_online
         )[0]
-        # print("online, ", rec_result)
+        
+        # 记录处理时间
+        processing_time = time.time() - start_time
+        print(f"[在线识别] 模型推理完成，耗时: {processing_time:.3f}秒")
+        print(f"[在线识别] 识别结果: {rec_result}")
+        
         if websocket.mode == "2pass" and websocket.status_dict_asr_online.get("is_final", False):
+            print(f"[在线识别] 2pass模式，is_final=True，返回结果")
             return rec_result
-            #     websocket.status_dict_asr_online["cache"] = dict()
+            
         if len(rec_result["text"]):
             # 获取完整识别文本
             full_text = rec_result["text"]
+            print(f"[在线识别] 完整文本: '{full_text}'")
             
-            # 初始化已发送文本长度跟踪
-            if not hasattr(websocket, 'sent_text_length'):
-                websocket.sent_text_length = 0
+            # 在线识别每次都发送完整结果，让前端处理文本累积逻辑
+            # 移除sent_text_length机制，因为在线识别每次返回的都是独立的完整结果
+            print(f"[在线识别] 发送完整识别文本: '{full_text}'")
             
-            # 只发送新增的文本部分
-            if len(full_text) > websocket.sent_text_length:
-                new_text = full_text[websocket.sent_text_length:]
-                websocket.sent_text_length = len(full_text)
+            mode = "2pass-online" if "2pass" in websocket.mode else websocket.mode
+            message = json.dumps(
+                {
+                    "mode": mode,
+                    "text": full_text,
+                    "wav_name": websocket.wav_name,
+                    "is_final": False,  # 在线流式识别始终为临时结果，让客户端处理累积逻辑
+                }
+            )
+            await websocket.send(message)
+            print(f"[在线识别] 消息已发送到前端，模式: {mode}")
                 
-                mode = "2pass-online" if "2pass" in websocket.mode else websocket.mode
-                message = json.dumps(
-                    {
-                        "mode": mode,
-                        "text": new_text,
-                        "wav_name": websocket.wav_name,
-                        "is_final": False,  # 在线流式识别始终为临时结果，让客户端处理累积逻辑
-                    }
-                )
-                await websocket.send(message)
-                
+        else:
+            print(f"[在线识别] 识别结果为空，跳过处理")
+            
         return rec_result  # 返回识别结果
+    else:
+        print(f"[在线识别] 音频数据为空，跳过处理")
     return None
 
 

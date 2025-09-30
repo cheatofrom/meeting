@@ -1,8 +1,9 @@
 import React from 'react';
-import { Button, Input, Switch, Upload, Space, Typography } from 'antd';
+import { Button, Input, Switch, Upload, Space, Typography, Badge, Radio } from 'antd';
 
 const { Text } = Typography;
-import { AudioOutlined, UploadOutlined } from '@ant-design/icons';
+import { AudioOutlined, UploadOutlined, DesktopOutlined } from '@ant-design/icons';
+import type { RecordingMode } from '../../hooks/useAudioRecording';
 
 interface ControlPanelSectionProps {
   useITN: boolean;
@@ -11,12 +12,14 @@ interface ControlPanelSectionProps {
   setHotwords: (value: string) => void;
   isConnected: boolean;
   isRecording: boolean;
+  recordingMode: RecordingMode;
   onConnect: () => void;
   onDisconnect: () => void;
   onStartRecording: () => void;
   onStopRecording: () => void;
   onFileUpload: (file: File) => Promise<boolean>;
   onClearText: () => void;
+  onSwitchRecordingMode: (mode: RecordingMode) => void;
 }
 
 export const ControlPanelSection: React.FC<ControlPanelSectionProps> = ({
@@ -26,12 +29,14 @@ export const ControlPanelSection: React.FC<ControlPanelSectionProps> = ({
   setHotwords,
   isConnected,
   isRecording,
+  recordingMode,
   onConnect,
   onDisconnect,
   onStartRecording,
   onStopRecording,
   onFileUpload,
-  onClearText
+  onClearText,
+  onSwitchRecordingMode
 }) => {
   return (
     <div className="control-panel">
@@ -52,6 +57,32 @@ export const ControlPanelSection: React.FC<ControlPanelSectionProps> = ({
               disabled={isConnected}
             />
           </Space>
+
+          {/* 连接状态指示器 */}
+          <Space>
+            <Text>连接状态:</Text>
+            <Badge 
+              status={isConnected ? "success" : "error"} 
+              text={isConnected ? "已连接" : "未连接"} 
+            />
+          </Space>
+        </Space>
+
+        {/* 录音模式选择 */}
+        <Space wrap>
+          <Text>录音模式:</Text>
+          <Radio.Group 
+            value={recordingMode} 
+            onChange={(e) => onSwitchRecordingMode(e.target.value)}
+            disabled={isRecording}
+          >
+            <Radio.Button value="microphone">
+              <AudioOutlined /> 麦克风录音
+            </Radio.Button>
+            <Radio.Button value="system">
+              <DesktopOutlined /> 系统录音
+            </Radio.Button>
+          </Radio.Group>
         </Space>
 
         <Space wrap>
@@ -64,19 +95,26 @@ export const ControlPanelSection: React.FC<ControlPanelSectionProps> = ({
 
           <Button
             type="primary"
-            icon={<AudioOutlined />}
-            onClick={isRecording ? onStopRecording : onStartRecording}
+            icon={recordingMode === 'microphone' ? <AudioOutlined /> : <DesktopOutlined />}
+            onClick={() => {
+              console.log('ControlPanelSection: 录音按钮被点击, 当前模式:', recordingMode, '录音状态:', isRecording);
+              if (isRecording) {
+                onStopRecording();
+              } else {
+                onStartRecording();
+              }
+            }}
             disabled={!isConnected}
           >
-            {isRecording ? '停止录音' : '开始录音'}
+            {isRecording ? '停止录音' : `开始${recordingMode === 'microphone' ? '麦克风' : '系统'}录音`}
           </Button>
 
           <Upload
             beforeUpload={onFileUpload}
             showUploadList={false}
-            disabled={!isConnected || isRecording}
+            accept=".wav,.mp3,.m4a,.flac,.aac"
           >
-            <Button icon={<UploadOutlined />} disabled={!isConnected || isRecording}>
+            <Button icon={<UploadOutlined />}>
               上传音频文件
             </Button>
           </Upload>

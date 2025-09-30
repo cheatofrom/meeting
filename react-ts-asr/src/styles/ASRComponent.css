@@ -311,22 +311,46 @@
   font-style: italic;
 }
 
-/* 流式显示时的打字机效果 */
+/* 流式显示时的打字机效果 - 增强版 */
 .ai-summary-streaming {
   position: relative;
 }
 
 .ai-summary-streaming::after {
-  content: '|';
-  animation: typing-cursor 1.2s infinite;
+  content: '▋';
+  animation: typing-cursor 0.8s infinite;
   color: #1677ff;
   font-weight: bold;
   margin-left: 2px;
+  font-size: 1.2em;
+  display: inline-block;
 }
 
 @keyframes typing-cursor {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
+  0%, 50% { 
+    opacity: 1; 
+    transform: scaleY(1);
+  }
+  51%, 100% { 
+    opacity: 0.3; 
+    transform: scaleY(0.8);
+  }
+}
+
+/* 流式内容渐入效果 */
+.ai-summary-streaming .ai-content-fade-in {
+  animation: streamingFadeIn 0.2s ease-out;
+}
+
+@keyframes streamingFadeIn {
+  from {
+    opacity: 0.7;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* 生成中的加载状态 */
@@ -342,6 +366,22 @@
   margin-bottom: 12px;
   color: #0369a1;
   font-weight: 500;
+}
+
+/* 移动端AI生成指示器优化 */
+@media (max-width: 768px) {
+  .ai-generating-indicator {
+    padding: 12px;
+    font-size: 14px;
+    text-align: center;
+    flex-direction: row;
+    gap: 8px;
+    margin: 16px 0;
+  }
+  
+  .ai-generating-indicator span {
+    line-height: 1.4;
+  }
 }
 
 @keyframes shimmer {
@@ -539,5 +579,155 @@
 @media (max-width: 768px) and (orientation: landscape) {
   .ai-summary-result {
     height: calc(100vh - 240px) !important;
+  }
+}
+
+/* 移动端面板切换器样式 */
+.mobile-panel-switcher {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.panel-switch-btn {
+  flex: 1;
+  max-width: 100px;
+  padding: 8px 16px;
+  border: 1px solid #d9d9d9;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.panel-switch-btn:hover:not(.disabled) {
+  border-color: #1677ff;
+  color: #1677ff;
+}
+
+.panel-switch-btn.active {
+  background: #1677ff;
+  color: #fff;
+  border-color: #1677ff;
+}
+
+.panel-switch-btn.disabled {
+  background: #f5f5f5;
+  color: #bfbfbf;
+  cursor: not-allowed;
+  border-color: #e8e8e8;
+}
+
+/* 移动端AI总结面板样式 */
+.mobile-ai-summary {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.mobile-ai-summary .ai-summary-content {
+  height: auto;
+  min-height: 400px;
+}
+
+/* 移动端面板模式下的容器样式 */
+.asr-container.mobile-panel-mode {
+  /* 移动端面板模式特定样式 */
+}
+
+/* 移动端面板切换器响应式设计 */
+@media (max-width: 768px) {
+  .mobile-panel-switcher {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(245, 245, 245, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 0;
+    border-radius: 0;
+    padding: 8px 12px;
+  }
+
+  .panel-switch-btn {
+    font-size: 12px;
+    padding: 6px 12px;
+    height: 32px;
+  }
+
+  .mobile-ai-summary {
+    margin-top: 12px;
+  }
+  
+  .mobile-ai-summary .ai-summary-panel {
+    width: 100% !important;
+    height: auto;
+    position: static;
+    box-shadow: none;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+  }
+
+  /* 移动端面板模式下隐藏不必要的间距 */
+  .asr-container.mobile-panel-mode .asr-card {
+    padding: 12px;
+  }
+
+  .asr-container.mobile-panel-mode .ant-card-body {
+    padding: 16px 12px;
+  }
+
+  /* 移动端面板内容优化 */
+  .asr-container.mobile-panel-mode .ant-card-head-title {
+    font-size: 18px;
+  }
+
+  /* 移动端think标签折叠优化 */
+  .ant-collapse {
+    background: transparent;
+    border: 1px solid #e8e8e8;
+  }
+
+  .ant-collapse-item {
+    border-bottom: none;
+  }
+
+  .ant-collapse-header {
+    padding: 8px 12px !important;
+    font-size: 12px;
+  }
+
+  .ant-collapse-content-box {
+    padding: 12px;
+  }
+
+  .think-content {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
+@media (max-width: 480px) {
+  .mobile-panel-switcher {
+    padding: 6px 8px;
+  }
+
+  .panel-switch-btn {
+    font-size: 11px;
+    padding: 4px 8px;
+    height: 28px;
+  }
+
+  .asr-container.mobile-panel-mode .asr-card {
+    padding: 8px;
+  }
+
+  .asr-container.mobile-panel-mode .ant-card-body {
+    padding: 12px 8px;
   }
 }

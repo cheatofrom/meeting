@@ -3,22 +3,25 @@ export const parseThinkTags = (content: string) => {
   const segments: { type: 'think' | 'content'; content: string }[] = [];
   let currentIndex = 0;
 
-  // 正则表达式匹配 <think> 和 </think> 标签
+  // 正则表达式匹配 <think> 和 </think> 标签，使用非贪婪匹配
   const thinkRegex = /<think>([\s\S]*?)<\/think>/gi;
   let match;
+
+  // 重置正则表达式的lastIndex，确保从头开始匹配
+  thinkRegex.lastIndex = 0;
 
   while ((match = thinkRegex.exec(content)) !== null) {
     // 添加think标签之前的内容
     if (match.index > currentIndex) {
-      const beforeContent = content.slice(currentIndex, match.index).trim();
-      if (beforeContent) {
+      const beforeContent = content.slice(currentIndex, match.index);
+      if (beforeContent.trim()) {
         segments.push({ type: 'content', content: beforeContent });
       }
     }
 
     // 添加think标签内容
-    const thinkContent = match[1].trim();
-    if (thinkContent) {
+    const thinkContent = match[1];
+    if (thinkContent.trim()) {
       segments.push({ type: 'think', content: thinkContent });
     }
 
@@ -27,15 +30,15 @@ export const parseThinkTags = (content: string) => {
 
   // 添加最后剩余的内容
   if (currentIndex < content.length) {
-    const remainingContent = content.slice(currentIndex).trim();
-    if (remainingContent) {
+    const remainingContent = content.slice(currentIndex);
+    if (remainingContent.trim()) {
       segments.push({ type: 'content', content: remainingContent });
     }
   }
 
   // 如果没有think标签，返回原内容
   if (segments.length === 0 && content.trim()) {
-    segments.push({ type: 'content', content: content.trim() });
+    segments.push({ type: 'content', content: content });
   }
 
   return segments;

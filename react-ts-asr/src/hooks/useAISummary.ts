@@ -9,7 +9,7 @@ export const useAISummary = () => {
   const [activeTab, setActiveTab] = useState<'notes' | 'ai-summary'>('notes');
   const [notes, setNotes] = useState<string>('');
   const [aiModel, setAiModel] = useState<string>('qwen3:8b');
-  const [systemPrompt, setSystemPrompt] = useState<string>('你是一个专业的会议纪要助手，擅长分析会议内容并生成结构化的总结。请以专业、客观的语调进行总结，确保信息准确、条理清晰。');
+  const [systemPrompt, setSystemPrompt] = useState<string>('你是一个专业的会议纪要助手，擅长分析会议内容并生成结构化的总结。请以专业、客观的语调进行总结，确保信息准确、条理清晰。每条时间线的内容都必须进行分析总结');
   const [userPrompt, setUserPrompt] = useState<string>('请对以下会议内容进行总结，提取关键信息、决策事项和行动计划：');
   const [aiSummaryResult, setAiSummaryResult] = useState<string>('');
   const [isGeneratingAI, setIsGeneratingAI] = useState<boolean>(false);
@@ -61,8 +61,7 @@ export const useAISummary = () => {
 
   // 检测是否为移动设备
   const isMobileDevice = () => {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-           (window.innerWidth <= 768);
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
   };
 
   // 检测浏览器是否支持流式处理
@@ -83,6 +82,9 @@ export const useAISummary = () => {
     setIsGeneratingAI(true);
     setAiSummaryResult('');
 
+    // 移动端始终使用非流式模式，避免白屏问题
+    const isMobile = isMobileDevice();
+    
     try {
       const meetingContent = editedResults.map(result =>
         `[${result.time_range || result.startTime || result.start_time || '未知时间'}] ${result.speaker}: ${result.text}`
@@ -97,8 +99,17 @@ export const useAISummary = () => {
       console.log('传给AI模型的内容(fullPrompt):');
       console.log(fullPrompt);
 
-      // 移动端或不支持流式处理时使用非流式模式
-      const shouldUseStream = !isMobileDevice() && supportsStreamingFetch();
+      // 移动端强制使用非流式处理，桌面端启用流式处理
+      const shouldUseStream = !isMobile && supportsStreamingFetch(); // 桌面端启用流式处理，移动端禁用
+      
+      console.log(`设备类型: ${isMobile ? '移动端' : '桌面端'}, 使用流式处理: ${shouldUseStream}`);
+
+      // 显示加载提示
+      messageApi.loading({
+        content: 'AI总结生成中...',
+        duration: 0,
+        key: 'aiSummaryLoading'
+      });
 
       const response = await fetch('/ollama/api/generate', {
         method: 'POST',
@@ -161,12 +172,20 @@ export const useAISummary = () => {
 
         const decoder = new TextDecoder();
         let buffer = '';
+        let accumulatedText = '';
+        let lastUpdateTime = Date.now();
+        const updateInterval = 50; // 减少到50ms更新一次UI，提供更流畅的体验
 
         try {
           while (true) {
             const { done, value } = await reader.read();
 
             if (done) {
+              // 确保最后的内容被更新
+              if (accumulatedText) {
+                const finalText = accumulatedText;
+                setAiSummaryResult(prev => prev + finalText);
+              }
               break;
             }
 
@@ -186,16 +205,29 @@ export const useAISummary = () => {
                   }
 
                   if (data.response) {
-                    setAiSummaryResult(prev => {
-                      const newContent = prev + data.response;
-                      // 使用setTimeout确保DOM更新后再滚动
-                      setTimeout(() => {
-                        if (aiSummaryResultRef.current) {
-                          aiSummaryResultRef.current.scrollTop = aiSummaryResultRef.current.scrollHeight;
-                        }
-                      }, 0);
-                      return newContent;
-                    });
+                    // 累积文本，减少状态更新频率
+                    accumulatedText += data.response;
+                    
+                    // 检查是否应该更新UI
+                    const currentTime = Date.now();
+                    if (currentTime - lastUpdateTime > updateInterval || accumulatedText.length > 50) {
+                      const textToAdd = accumulatedText;
+                      accumulatedText = ''; // 重置累积文本
+                      lastUpdateTime = currentTime;
+                      
+                      setAiSummaryResult(prev => {
+                        const newContent = prev + textToAdd;
+                        
+                        // 使用setTimeout确保DOM更新后再滚动
+                        setTimeout(() => {
+                          if (aiSummaryResultRef.current) {
+                            aiSummaryResultRef.current.scrollTop = aiSummaryResultRef.current.scrollHeight;
+                          }
+                        }, 0);
+                        
+                        return newContent;
+                      });
+                    }
                   }
 
                   if (data.done) {
@@ -209,38 +241,8 @@ export const useAISummary = () => {
           }
         } catch (streamError) {
           console.error('流式处理错误:', streamError);
-          // 如果流式处理失败，尝试非流式降级
-          messageApi.warning('流式处理失败，正在尝试非流式模式...');
-
-          const fallbackResponse = await fetch('/ollama/api/generate', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: aiModel,
-              prompt: fullPrompt,
-              stream: false,
-              options: {
-                num_ctx: 16384
-              }
-            }),
-          });
-
-          if (fallbackResponse.ok) {
-            const result = await fallbackResponse.json();
-            if (result.response) {
-              setAiSummaryResult(result.response);
-              // 使用setTimeout确保DOM更新后再滚动
-              setTimeout(() => {
-                if (aiSummaryResultRef.current) {
-                  aiSummaryResultRef.current.scrollTop = aiSummaryResultRef.current.scrollHeight;
-                }
-              }, 100);
-            }
-          } else {
-            throw new Error('降级处理也失败了');
-          }
+          // 直接抛出错误，不进行降级处理
+          throw streamError;
         }
       } else {
         // 非流式处理（一次性返回）
@@ -262,9 +264,15 @@ export const useAISummary = () => {
         }
       }
 
+      // 关闭加载提示
+      messageApi.destroy('aiSummaryLoading');
       messageApi.success('AI总结生成完成');
     } catch (error) {
       console.error('AI总结生成失败:', error);
+      
+      // 关闭加载提示
+      messageApi.destroy('aiSummaryLoading');
+      
       messageApi.error(`AI总结生成失败: ${error instanceof Error ? error.message : '未知错误'}`);
     } finally {
       setIsGeneratingAI(false);
