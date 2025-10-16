@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  funasr-backend:
+    build: 
+      context: ./websocket
+      dockerfile: Dockerfile
+    ports:
+      - "10095:10095"
+    environment:
+      - ASR_HOST=0.0.0.0
+      - ASR_PORT=10095
+      - ASR_DEVICE=cuda
+      - ASR_NGPU=1
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./models:/app/models
+      - ./ssl_key:/app/ssl_key
+      - ./websocket/logs:/app/logs
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:10095/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  funasr-frontend:
+    build:
+      context: ./react-ts-asr
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_SERVER_URL=wss://localhost:10095
+      - REACT_APP_MAX_FILE_SIZE=104857600
+    depends_on:
+      funasr-backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 可选：添加 Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl_key:/etc/nginx/ssl
+    depends_on:
+      - funasr-frontend
+      - funasr-backend
+    restart: unless-stopped
+    profiles:
+      - production
+
+volumes:
+  models:
+    driver: local
+  logs:
+    driver: local
+
+networks:
+  default:
+    driver: bridge
