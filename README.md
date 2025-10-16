@@ -43,6 +43,7 @@
   - `2pass`: 两遍识别，兼顾速度和精度
 - **🎤 语音活动检测 (VAD)**: 自动检测语音段落，过滤静音
 - **📝 标点符号预测**: 自动添加标点符号，提升可读性
+- **👥 说话人识别**: 自动区分不同说话人，支持多人会议场景
 - **🔥 热词支持**: 支持自定义热词提升识别准确率
 - **📁 文件上传识别**: 支持音频文件批量处理
 - **🌐 WebSocket 通信**: 实时双向通信，低延迟传输
@@ -106,12 +107,23 @@
 
 ```
 ┌─────────────────┐    WebSocket     ┌─────────────────┐
-│   React 前端    │ ◄──────────────► │  Python 后端    │
-│                 │                  │                 │
-│ • 音频录制      │                  │ • FunASR 模型   │
+│   React 前端    │ ◄──────────────► │ WSS 实时服务    │
+│                 │                  │ (meet_wss_server)│
+│ • 音频录制      │                  │ • 实时识别      │
 │ • 实时显示      │                  │ • VAD 检测      │
 │ • 文件上传      │                  │ • 标点预测      │
 └─────────────────┘                  └─────────────────┘
+         │                                    │
+         │ HTTP API                           │ 模型共享
+         ▼                                    ▼
+┌─────────────────┐                  ┌─────────────────┐
+│ API 识别服务    │                  │   AI 模型库     │
+│(meeting_api_server)                │                 │
+│ • 文件识别      │                  │ • Paraformer    │
+│ • 说话人识别    │                  │ • FSMN-VAD      │
+│ • 批量处理      │                  │ • CT-Transformer│
+└─────────────────┘                  │ • CAMPPlus      │
+                                     └─────────────────┘
 ```
 
 ## 📦 技术栈
@@ -129,10 +141,10 @@
 - **PyTorch** - 深度学习框架
 
 ### AI 模型
-- **Paraformer**: 语音识别主模型
-- **FSMN-VAD**: 语音活动检测
-- **CT-Transformer**: 标点符号预测
-- **CAMPPlus**: 说话人识别 (可选)
+- **Paraformer**: 语音识别主模型 (支持中英文混合识别)
+- **FSMN-VAD**: 语音活动检测 (自动分割语音段)
+- **CT-Transformer**: 标点符号预测 (智能添加标点)
+- **CAMPPlus**: 说话人识别 (区分不同说话人，支持多人会议)
 
 ## 🛠️ 快速开始
 
@@ -178,6 +190,10 @@ docker-compose ps
 
 #### 后端服务部署
 
+本项目包含两个后端服务，分别提供不同的功能：
+
+##### 🔄 WebSocket 实时识别服务 (WSS)
+
 ```bash
 cd websocket
 
@@ -185,22 +201,56 @@ cd websocket
 pip install -r requirements.txt
 pip install -U modelscope funasr
 
-# 启动基础服务
-python funasr_wss_server.py --port 10095
+# 启动WSS服务 (实时语音识别)
+python meet_wss_server.py --port 10095
 
 # 生产环境启动 (使用SSL)
-python funasr_wss_server.py --port 10095 \
+python meet_wss_server.py --port 10095 \
   --certfile ../ssl_key/server.crt \
   --keyfile ../ssl_key/server.key
 
 # GPU加速启动
-python funasr_wss_server.py --port 10095 --ngpu 1 --device cuda
+python meet_wss_server.py --port 10095 --ngpu 1 --device cuda
 
 # 自定义模型路径
-python funasr_wss_server.py --port 10095 \
+python meet_wss_server.py --port 10095 \
   --asr_model ./models/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch \
   --vad_model ./models/speech_fsmn_vad_zh-cn-16k-common-pytorch \
   --punc_model ./models/punc_ct-transformer_zh-cn-common-vad_realtime-vocab272727
+```
+
+##### 🎤 HTTP API 识别服务 (含说话人识别)
+
+```bash
+# 启动API服务 (文件上传识别 + 说话人识别)
+python meeting_api_server.py
+
+# 自定义端口启动
+uvicorn meeting_api_server:app --host 0.0.0.0 --port 8000
+
+# 生产环境启动
+uvicorn meeting_api_server:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+##### 📋 服务功能对比
+
+| 服务类型 | 端口 | 主要功能 | 使用场景 |
+|---------|------|----------|----------|
+| **WSS服务** | 10095 | 实时语音识别、VAD检测 | 实时录音转文字 |
+| **API服务** | 8000 | 文件识别、说话人识别 | 音频文件批量处理 |
+
+##### 🚀 同时启动两个服务
+
+```bash
+# 终端1: 启动WSS服务
+python meet_wss_server.py --port 10095
+
+# 终端2: 启动API服务  
+python meeting_api_server.py
+
+# 或使用PM2管理进程
+pm2 start meet_wss_server.py --name "wss-server" -- --port 10095
+pm2 start meeting_api_server.py --name "api-server"
 ```
 
 #### 前端应用部署
@@ -269,7 +319,7 @@ pm2 serve dist 3000 --name "meeting-asr-frontend"
    - 实时查看识别结果
    - 点击"停止录音"结束
 
-### 📁 文件批量识别
+### 📁 文件批量识别 (含说话人识别)
 1. **切换到文件模式**
    - 点击界面上的"文件模式"选项卡
 
@@ -281,12 +331,33 @@ pm2 serve dist 3000 --name "meeting-asr-frontend"
 3. **配置处理参数**
    - 批处理时长: 15000ms (推荐)
    - 热词设置: 根据音频内容添加
-   - 输出格式: 纯文本/带时间戳
+   - 说话人识别: 自动启用 (多人会议场景)
+   - 输出格式: 纯文本/带时间戳/带说话人标签
 
 4. **开始处理**
    - 点击"开始识别"
-   - 等待处理完成
+   - 等待处理完成 (包含说话人分离)
+   - 查看识别结果 (自动标注说话人)
    - 下载识别结果 (TXT/JSON格式)
+
+### 👥 说话人识别功能
+1. **自动说话人检测**
+   - 系统自动识别音频中的不同说话人
+   - 为每个说话人分配标签 (如: spk0, spk1, spk2...)
+   - 支持最多10个说话人的同时识别
+
+2. **说话人标签管理**
+   - 点击说话人标签可进行重命名
+   - 支持替换为真实姓名 (如: 张三, 李四)
+   - 批量替换相同说话人的所有标签
+
+3. **识别结果格式**
+   ```
+   [spk0]: 大家好，今天我们来讨论项目进展。
+   [spk1]: 好的，我先汇报一下技术方面的情况。
+   [spk0]: 请继续，我们都在听。
+   [spk2]: 我补充一下市场方面的数据。
+   ```
 
 ### ⚙️ 高级配置
 - **🔥 热词设置**: 在热词输入框中添加专业术语，用逗号分隔
