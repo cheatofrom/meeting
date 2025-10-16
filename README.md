@@ -68,8 +68,6 @@
 
 *移动端完美适配，响应式设计，支持触屏操作*
 
-### 🎬 功能演示
-![功能演示GIF](docs/images/demo.gif)
 
 *实时语音识别演示 - 从说话到文字显示的完整流程*
 
@@ -661,13 +659,7 @@ git push origin feature/your-feature-name
 - 遵循React Hooks最佳实践
 - 确保响应式设计
 
-### 🏆 贡献者
 
-感谢所有为项目做出贡献的开发者！
-
-<a href="https://github.com/your-username/Meeting-ASR-System/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=your-username/Meeting-ASR-System" />
-</a>
 
 ### 📜 行为准则
 请遵循我们的 [行为准则](CODE_OF_CONDUCT.md)，营造友好的开发环境。
@@ -678,11 +670,11 @@ git push origin feature/your-feature-name
 
 如有问题或建议，欢迎通过以下方式联系：
 
-- 📧 **邮箱**: [your-email@example.com](mailto:your-email@example.com)
+- 📧 **邮箱**: [2661517213@qq.com](mailto:your-email@example.com)
 - 🐛 **问题反馈**: [GitHub Issues](https://github.com/your-username/Meeting-ASR-System/issues)
 - 💬 **功能讨论**: [GitHub Discussions](https://github.com/your-username/Meeting-ASR-System/discussions)
-- 📱 **微信群**: 扫描下方二维码加入技术交流群
-- 🌐 **官方网站**: [https://your-website.com](https://your-website.com)
+
+
 
 ### 🔗 相关链接
 

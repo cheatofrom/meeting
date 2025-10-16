@@ -294,3 +294,5 @@ ws reset now, total num is  3
 new user connected
 new user connected
 ConnectionClosed... {<websockets.legacy.server.WebSocketServerProtocol object at 0x79e164554190>, <websockets.legacy.server.WebSocketServerProtocol object at 0x79e1645570a0>, <websockets.legacy.server.WebSocketServerProtocol object at 0x79e1645abbe0>, <websockets.legacy.server.WebSocketServerProtocol object at 0x79e1756d25f0>}
+ws reset now, total num is  4
+ConnectionClosed... {<websockets.legacy.server.WebSocketServerProtocol object at 0x79e1645570a0>, <websockets.legacy.server.WebSocketServerProtocol object at 0x79e1645abbe0>, <websockets.legacy.server.WebSocketServerProtocol object at 0x79e1756d25f0>}
