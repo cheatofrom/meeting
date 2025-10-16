@@ -33,7 +33,7 @@ export const useVoiceRecognition = () => {
         formData.append('hotword', recognitionHotword.trim());
       }
 
-      const response = await fetch('https://192.168.1.66:10096/api/recognize', {
+      const response = await fetch('/api/recognize', {
         method: 'POST',
         body: formData,
       });

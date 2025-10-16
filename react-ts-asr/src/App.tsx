@@ -13,7 +13,8 @@ function App() {
     >
       <AntdApp>
         <div className="app-container">
-          <ASRComponent defaultServerUrl="wss://192.168.1.66:10095/" />
+          <ASRComponent 
+          defaultServerUrl="wss://192.168.1.66/ws/" />
         </div>
       </AntdApp>
     </ConfigProvider>

@@ -1,0 +1,292 @@
+nohup: 忽略输入
+WARNING:root:trust_remote_code: False
+WARNING:root:trust_remote_code: False
+WARNING:root:trust_remote_code: False
+WARNING:root:trust_remote_code: False
+model loading
+funasr version: 1.2.7.
+funasr version: 1.2.7.
+funasr version: 1.2.7.
+funasr version: 1.2.7.
+model loaded! only support one client at the same time now!!!!
+GPU Memory Status:
+Total: 23.67GB, Free: 21.68GB
+new user connected
+new user connected
+[VAD检测] 语音开始: 260, 语音结束: -1, 当前语音状态: False
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 38400 bytes, 音频能量: 3210.7, is_final: False
+[在线识别] 模型推理完成，耗时: 0.183秒
+[在线识别] 识别结果: {'key': 'rand_key_1qeoePtwBldGD', 'text': '你好'}
+[在线识别] 完整文本: '你好'
+[在线识别] 发送完整识别文本: '你好'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[流式触发] 触发在线识别，原因: 时间达到阈值(5.0s/5.0s)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 11520 bytes, 音频能量: 3334.2, is_final: False
+[在线识别] 模型推理完成，耗时: 0.003秒
+[在线识别] 识别结果: {'key': 'rand_key_2NiTtyVA1PfaM', 'text': ''}
+[在线识别] 识别结果为空，跳过处理
+[流式触发] 重置强制发送计数器 (VAD检测到语音活动)
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 2025.3, is_final: False
+[在线识别] 模型推理完成，耗时: 0.074秒
+[在线识别] 识别结果: {'key': 'rand_key_c2V9SMPFTP5DO', 'text': '你好今天'}
+[在线识别] 完整文本: '你好今天'
+[在线识别] 发送完整识别文本: '你好今天'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 714.7, is_final: False
+[在线识别] 模型推理完成，耗时: 0.075秒
+[在线识别] 识别结果: {'key': 'rand_key_hFzqnPc8ZnNjg', 'text': '天气怎么'}
+[在线识别] 完整文本: '天气怎么'
+[在线识别] 发送完整识别文本: '天气怎么'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[VAD检测] 语音开始: -1, 语音结束: 2700, 当前语音状态: True
+[流式触发] 触发在线识别，原因: VAD检测到语音结束, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 17280 bytes, 音频能量: 52.8, is_final: True
+[在线识别] 模型推理完成，耗时: 0.072秒
+[在线识别] 识别结果: {'key': 'rand_key_o23ZbQ4aVltGK', 'text': '样'}
+[在线识别] 2pass模式，is_final=True，返回结果
+Processing audio data: 96000 bytes
+GPU Memory - Total: 23.67GB, Free: 21.68GB, Allocated: 1.96GB
+ASR result: {'key': 'rand_key_qveF3q80tXAyZ', 'text': '你 好 你 好 你 好 今 天 天 气 怎 么 样', 'timestamp': [[210, 390], [390, 630], [630, 730], [730, 930], [930, 1090], [1090, 1270], [1270, 1370], [1370, 1510], [1510, 1670], [1670, 1830], [1830, 1910], [1910, 2010], [2010, 2545]]}
+GPU memory cleared
+Applying punctuation model
+Punctuation result: {'key': 'rand_key_ydkP7ipsU1vd8', 'text': '你好你好你好，今天天气怎么样', 'punc_array': tensor([1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 4], device='cuda:0')}
+Sending message: {"mode": "2pass-offline", "text": "\u4f60\u597d\u4f60\u597d\u4f60\u597d\uff0c\u4eca\u5929\u5929\u6c14\u600e\u4e48\u6837", "wav_name": "microphone", "is_final": false}
+ConnectionClosed... {<websockets.legacy.server.WebSocketServerProtocol object at 0x79e1645a83d0>, <websockets.legacy.server.WebSocketServerProtocol object at 0x79e1645abbe0>}
+ws reset now, total num is  2
+new user connected
+ConnectionClosed... {<websockets.legacy.server.WebSocketServerProtocol object at 0x79e1645abbe0>, <websockets.legacy.server.WebSocketServerProtocol object at 0x79e1756d2d70>}
+ws reset now, total num is  2
+new user connected
+new user connected
+ConnectionClosed... {<websockets.legacy.server.WebSocketServerProtocol object at 0x79e1645570a0>, <websockets.legacy.server.WebSocketServerProtocol object at 0x79e1645553c0>, <websockets.legacy.server.WebSocketServerProtocol object at 0x79e1645abbe0>}
+ws reset now, total num is  3
+new user connected
+[VAD检测] 语音开始: 2720, 语音结束: -1, 当前语音状态: False
+[流式触发] 触发在线识别，原因: 时间达到阈值(23.8s/5.0s)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 101760 bytes, 音频能量: 282.5, is_final: False
+[在线识别] 模型推理完成，耗时: 0.146秒
+[在线识别] 识别结果: {'key': 'rand_key_wtlPvUYVAyaA5', 'text': ''}
+[在线识别] 识别结果为空，跳过处理
+[流式触发] 重置强制发送计数器 (VAD检测到语音活动)
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 1976.0, is_final: False
+[在线识别] 模型推理完成，耗时: 0.151秒
+[在线识别] 识别结果: {'key': 'rand_key_RWnWHHvy1qnhK', 'text': '好好'}
+[在线识别] 完整文本: '好好'
+[在线识别] 发送完整识别文本: '好好'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 324.1, is_final: False
+[在线识别] 模型推理完成，耗时: 0.056秒
+[在线识别] 识别结果: {'key': 'rand_key_ONZZWo5bxH8kR', 'text': '了'}
+[在线识别] 完整文本: '了'
+[在线识别] 发送完整识别文本: '了'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[VAD检测] 语音开始: -1, 语音结束: 3890, 当前语音状态: True
+[流式触发] 触发在线识别，原因: VAD检测到语音结束, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 3840 bytes, 音频能量: 2145.8, is_final: True
+[在线识别] 模型推理完成，耗时: 0.044秒
+[在线识别] 识别结果: {'key': 'rand_key_3G5ZZTg9mkC7e', 'text': ''}
+[在线识别] 2pass模式，is_final=True，返回结果
+Processing audio data: 55680 bytes
+GPU Memory - Total: 23.67GB, Free: 21.68GB, Allocated: 1.96GB
+ASR result: {'key': 'rand_key_7BOz8rqB4WXwN', 'text': 'hello hello', 'timestamp': [[210, 490], [490, 1225]]}
+GPU memory cleared
+Applying punctuation model
+Punctuation result: {'key': 'rand_key_uftbFaWqmWzyB', 'text': 'hello hello', 'punc_array': tensor([1, 1], device='cuda:0')}
+Sending message: {"mode": "2pass-offline", "text": "hello hello", "wav_name": "microphone", "is_final": false}
+[VAD检测] 语音开始: 5550, 语音结束: -1, 当前语音状态: False
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 57600 bytes, 音频能量: 882.5, is_final: False
+[在线识别] 模型推理完成，耗时: 0.067秒
+[在线识别] 识别结果: {'key': 'rand_key_w9gB5BpEyo6zp', 'text': ''}
+[在线识别] 识别结果为空，跳过处理
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 2117.7, is_final: False
+[在线识别] 模型推理完成，耗时: 0.062秒
+[在线识别] 识别结果: {'key': 'rand_key_Fw54NVsTYvRhZ', 'text': '嗯识'}
+[在线识别] 完整文本: '嗯识'
+[在线识别] 发送完整识别文本: '嗯识'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 1634.8, is_final: False
+[在线识别] 模型推理完成，耗时: 0.070秒
+[在线识别] 识别结果: {'key': 'rand_key_y7ZfPLzvoG3Dc', 'text': '别的还挺'}
+[在线识别] 完整文本: '别的还挺'
+[在线识别] 发送完整识别文本: '别的还挺'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 161.5, is_final: False
+[在线识别] 模型推理完成，耗时: 0.069秒
+[在线识别] 识别结果: {'key': 'rand_key_TxO6wBrwzXXTs', 'text': '清楚'}
+[在线识别] 完整文本: '清楚'
+[在线识别] 发送完整识别文本: '清楚'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[VAD检测] 语音开始: -1, 语音结束: 7820, 当前语音状态: True
+[流式触发] 触发在线识别，原因: VAD检测到语音结束, 音频活跃: True, VAD检测到语音: True
+[在线识别] 音频能量过低(41.3)，跳过处理
+Processing audio data: 90240 bytes
+GPU Memory - Total: 23.67GB, Free: 21.68GB, Allocated: 1.96GB
+ASR result: {'key': 'rand_key_xbo8cayIaih0M', 'text': '嗯 识 别 的 还 挺 清 楚 的', 'timestamp': [[270, 510], [810, 970], [970, 1090], [1090, 1210], [1210, 1310], [1310, 1510], [1510, 1650], [1650, 1830], [1830, 2365]]}
+GPU memory cleared
+Applying punctuation model
+Punctuation result: {'key': 'rand_key_M76mfVDm2aH5N', 'text': '嗯，识别的还挺清楚的', 'punc_array': tensor([1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 3], device='cuda:0')}
+Sending message: {"mode": "2pass-offline", "text": "\u55ef\uff0c\u8bc6\u522b\u7684\u8fd8\u633a\u6e05\u695a\u7684", "wav_name": "microphone", "is_final": false}
+[VAD检测] 语音开始: 10080, 语音结束: -1, 当前语音状态: False
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 76800 bytes, 音频能量: 211.1, is_final: False
+[在线识别] 模型推理完成，耗时: 0.090秒
+[在线识别] 识别结果: {'key': 'rand_key_Tp24SHiqMdYyA', 'text': '的这'}
+[在线识别] 完整文本: '的这'
+[在线识别] 发送完整识别文本: '的这'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 1281.7, is_final: False
+[在线识别] 模型推理完成，耗时: 0.062秒
+[在线识别] 识别结果: {'key': 'rand_key_5fa9VpVzCRrAw', 'text': '个只是'}
+[在线识别] 完整文本: '个只是'
+[在线识别] 发送完整识别文本: '个只是'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 357.7, is_final: False
+[在线识别] 模型推理完成，耗时: 0.075秒
+[在线识别] 识别结果: {'key': 'rand_key_bmMg2qY8a03n8', 'text': '初步识'}
+[在线识别] 完整文本: '初步识'
+[在线识别] 发送完整识别文本: '初步识'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 766.7, is_final: False
+[在线识别] 模型推理完成，耗时: 0.074秒
+[在线识别] 识别结果: {'key': 'rand_key_XiRQ08XYhLXh1', 'text': '别'}
+[在线识别] 完整文本: '别'
+[在线识别] 发送完整识别文本: '别'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 417.4, is_final: False
+[在线识别] 模型推理完成，耗时: 0.070秒
+[在线识别] 识别结果: {'key': 'rand_key_fxnqCvRFEIHff', 'text': '就是你也'}
+[在线识别] 完整文本: '就是你也'
+[在线识别] 发送完整识别文本: '就是你也'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[流式触发] 触发在线识别，原因: 样本数量达到阈值(80640/80000)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 音频能量过低(47.9)，跳过处理
+[流式触发] 重置强制发送计数器 (VAD检测到语音活动)
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 1010.1, is_final: False
+[在线识别] 模型推理完成，耗时: 0.074秒
+[在线识别] 识别结果: {'key': 'rand_key_j2WqJlITTMh57', 'text': '嗯'}
+[在线识别] 完整文本: '嗯'
+[在线识别] 发送完整识别文本: '嗯'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 2749.8, is_final: False
+[在线识别] 模型推理完成，耗时: 0.075秒
+[在线识别] 识别结果: {'key': 'rand_key_6lL8oii4oqFYt', 'text': '你识'}
+[在线识别] 完整文本: '你识'
+[在线识别] 发送完整识别文本: '你识'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 1913.3, is_final: False
+[在线识别] 模型推理完成，耗时: 0.075秒
+[在线识别] 识别结果: {'key': 'rand_key_iXTTIKjPctNCH', 'text': '别完了之后'}
+[在线识别] 完整文本: '别完了之后'
+[在线识别] 发送完整识别文本: '别完了之后'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 948.8, is_final: False
+[在线识别] 模型推理完成，耗时: 0.029秒
+[在线识别] 识别结果: {'key': 'rand_key_hGuuRUex5Z1mm', 'text': '它还'}
+[在线识别] 完整文本: '它还'
+[在线识别] 发送完整识别文本: '它还'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 738.3, is_final: False
+[在线识别] 模型推理完成，耗时: 0.082秒
+[在线识别] 识别结果: {'key': 'rand_key_0CdwvqOAy5bsP', 'text': '进行二次'}
+[在线识别] 完整文本: '进行二次'
+[在线识别] 发送完整识别文本: '进行二次'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 536.0, is_final: False
+[在线识别] 模型推理完成，耗时: 0.067秒
+[在线识别] 识别结果: {'key': 'rand_key_B2BAxLgfJZCig', 'text': '识别就是'}
+[在线识别] 完整文本: '识别就是'
+[在线识别] 发送完整识别文本: '识别就是'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 207.4, is_final: False
+[在线识别] 模型推理完成，耗时: 0.070秒
+[在线识别] 识别结果: {'key': 'rand_key_O2WVD4VT5qwrX', 'text': '最终识'}
+[在线识别] 完整文本: '最终识'
+[在线识别] 发送完整识别文本: '最终识'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[VAD检测] 语音开始: -1, 语音结束: 17610, 当前语音状态: True
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, VAD检测到语音结束, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 251.5, is_final: True
+[在线识别] 模型推理完成，耗时: 0.093秒
+[在线识别] 识别结果: {'key': 'rand_key_UMtEJxtA06LPX', 'text': '别的'}
+[在线识别] 2pass模式，is_final=True，返回结果
+Processing audio data: 261120 bytes
+GPU Memory - Total: 23.67GB, Free: 21.68GB, Allocated: 1.96GB
+ASR result: {'key': 'rand_key_kwcBC9CteRovo', 'text': '这 个 只 是 初 步 识 别 就 是 你 识 啊 你 识 别 完 了 之 后 它 还 进 行 二 次 识 别 就 是 最 终 识 分', 'timestamp': [[250, 390], [390, 550], [550, 690], [690, 910], [910, 1110], [1110, 1310], [1310, 1450], [1450, 1690], [2110, 2290], [2290, 2410], [2410, 2650], [3210, 3450], [3730, 3970], [3970, 4110], [4110, 4350], [4350, 4470], [4470, 4550], [4550, 4670], [4670, 4770], [4770, 4890], [4890, 5070], [5070, 5310], [5470, 5610], [5610, 5810], [5810, 5950], [5950, 6170], [6170, 6310], [6310, 6490], [6490, 6590], [6590, 6690], [6690, 6830], [6830, 7030], [7030, 7270], [7830, 8035]]}
+GPU memory cleared
+Applying punctuation model
+Punctuation result: {'key': 'rand_key_ybNvjl05F4eXg', 'text': '，这个只是初步识别就是你识啊，你识别完了之后，它还进行二次识别，就是最终识分', 'punc_array': tensor([1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2,
+        1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 3],
+       device='cuda:0')}
+Sending message: {"mode": "2pass-offline", "text": "\uff0c\u8fd9\u4e2a\u53ea\u662f\u521d\u6b65\u8bc6\u522b\u5c31\u662f\u4f60\u8bc6\u554a\uff0c\u4f60\u8bc6\u522b\u5b8c\u4e86\u4e4b\u540e\uff0c\u5b83\u8fd8\u8fdb\u884c\u4e8c\u6b21\u8bc6\u522b\uff0c\u5c31\u662f\u6700\u7ec8\u8bc6\u5206", "wav_name": "microphone", "is_final": false}
+[VAD检测] 语音开始: 17890, 语音结束: -1, 当前语音状态: False
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 477.2, is_final: False
+[在线识别] 模型推理完成，耗时: 0.033秒
+[在线识别] 识别结果: {'key': 'rand_key_GifOG9cU4JpgU', 'text': '冷'}
+[在线识别] 完整文本: '冷'
+[在线识别] 发送完整识别文本: '冷'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 53.4, is_final: False
+[在线识别] 模型推理完成，耗时: 0.067秒
+[在线识别] 识别结果: {'key': 'rand_key_qx780HOhkFm3K', 'text': '分冷'}
+[在线识别] 完整文本: '分冷'
+[在线识别] 发送完整识别文本: '分冷'
+[在线识别] 消息已发送到前端，模式: 2pass-online
+[VAD检测] 语音开始: -1, 语音结束: 18990, 当前语音状态: True
+[流式触发] 触发在线识别，原因: VAD检测到语音结束, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 5760 bytes, 音频能量: 126.6, is_final: True
+[在线识别] 模型推理完成，耗时: 0.040秒
+[在线识别] 识别结果: {'key': 'rand_key_N9v90wxhXYbAx', 'text': ''}
+[在线识别] 2pass模式，is_final=True，返回结果
+Processing audio data: 53760 bytes
+GPU Memory - Total: 23.67GB, Free: 21.68GB, Allocated: 1.96GB
+ASR result: {'key': 'rand_key_lE35oURU3OZ5V', 'text': '笨 人 笨 人', 'timestamp': [[150, 310], [310, 490], [490, 630], [630, 1195]]}
+GPU memory cleared
+Applying punctuation model
+Punctuation result: {'key': 'rand_key_U4O56yWMaQ37m', 'text': '笨人笨人', 'punc_array': tensor([1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2,
+        1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1], device='cuda:0')}
+Sending message: {"mode": "2pass-offline", "text": "\u7b28\u4eba\u7b28\u4eba", "wav_name": "microphone", "is_final": false}
+[VAD检测] 语音开始: 19270, 语音结束: -1, 当前语音状态: False
+[流式触发] 触发在线识别，原因: chunk_interval(10)+VAD检测, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 19200 bytes, 音频能量: 55.3, is_final: False
+[在线识别] 模型推理完成，耗时: 0.042秒
+[在线识别] 识别结果: {'key': 'rand_key_jFY92qFvTHUZo', 'text': ''}
+[在线识别] 识别结果为空，跳过处理
+[VAD检测] 语音开始: -1, 语音结束: 19910, 当前语音状态: True
+[流式触发] 触发在线识别，原因: VAD检测到语音结束, 音频活跃: True, VAD检测到语音: True
+[在线识别] 处理音频数据: 9600 bytes, 音频能量: 69.9, is_final: True
+[在线识别] 模型推理完成，耗时: 0.061秒
+[在线识别] 识别结果: {'key': 'rand_key_EzzOnfA2r8FBQ', 'text': ''}
+[在线识别] 2pass模式，is_final=True，返回结果
+Processing audio data: 38400 bytes
+GPU Memory - Total: 23.67GB, Free: 21.68GB, Allocated: 1.96GB
+ASR result: {'key': 'rand_key_F4yjBZnWBOXmr', 'text': 'b', 'timestamp': [[130, 685]]}
+GPU memory cleared
+Applying punctuation model
+Punctuation result: {'key': 'rand_key_eZiDuxsZZCvpk', 'text': 'b', 'punc_array': tensor([1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2,
+        1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1], device='cuda:0')}
+Sending message: {"mode": "2pass-offline", "text": "b", "wav_name": "microphone", "is_final": false}
+ConnectionClosed... {<websockets.legacy.server.WebSocketServerProtocol object at 0x79e164554970>, <websockets.legacy.server.WebSocketServerProtocol object at 0x79e1645570a0>, <websockets.legacy.server.WebSocketServerProtocol object at 0x79e1645abbe0>}

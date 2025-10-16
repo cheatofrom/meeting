@@ -37,8 +37,8 @@ export class SystemAudioRecorderService {
     };
   }
 
-  public async start(): Promise<boolean> {
-    if (this.isRecording) return true;
+  public async start(): Promise<{ success: boolean; error?: string }> {
+    if (this.isRecording) return { success: true };
 
     try {
       // 初始化录音数据收集
@@ -104,8 +104,8 @@ export class SystemAudioRecorderService {
       
       this.isRecording = true;
       console.log('SystemAudioRecorder: 系统录音启动成功');
-      return true;
-    } catch (error) {
+      return { success: true };
+    } catch (error: any) {
       console.error('SystemAudioRecorder: 启动系统录音失败:', error);
       
       // 清理可能已创建的资源
@@ -118,7 +118,20 @@ export class SystemAudioRecorderService {
         this.audioContext = null;
       }
       
-      return false;
+      // 根据不同的错误类型提供具体的错误信息
+      let errorMessage = '系统录音启动失败';
+      
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        errorMessage = '系统录音权限被拒绝，请允许屏幕共享权限';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = '未找到可录制的音频源';
+      } else if (error.name === 'NotSupportedError') {
+        errorMessage = '浏览器不支持系统录音功能';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      return { success: false, error: errorMessage };
     }
   }
 

@@ -38,8 +38,8 @@ export class AudioRecorderService {
     };
   }
 
-  public async start(): Promise<boolean> {
-    if (this.isRecording) return true;
+  public async start(): Promise<{ success: boolean; error?: string }> {
+    if (this.isRecording) return { success: true };
 
     try {
       // 初始化录音数据收集
@@ -47,7 +47,12 @@ export class AudioRecorderService {
       this.startTime = Date.now();
       
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('浏览器不支持录音功能');
+        throw new Error('浏览器不支持录音功能，请使用现代浏览器');
+      }
+
+      // 检查是否为HTTPS环境
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        throw new Error('麦克风权限需要HTTPS环境，请确保网站使用HTTPS访问');
       }
 
       this.mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -62,7 +67,7 @@ export class AudioRecorderService {
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
 
       this.audioInput = this.audioContext.createMediaStreamSource(this.mediaStream);
-      this.processor = this.audioContext.createScriptProcessor(1024, 1, 1); // 减小缓冲区以提高实时性
+      this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
       
       this.processor.onaudioprocess = (e) => this.onAudioProcess(e);
       
@@ -70,10 +75,30 @@ export class AudioRecorderService {
       this.processor.connect(this.audioContext.destination);
       
       this.isRecording = true;
-      return true;
-    } catch (error) {
+      return { success: true };
+    } catch (error: any) {
       console.error('AudioRecorder: 启动录音失败:', error);
-      return false;
+      
+      // 根据不同的错误类型提供具体的错误信息
+      let errorMessage = '录音启动失败';
+      
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        errorMessage = '麦克风权限被拒绝，请在浏览器设置中允许麦克风访问权限';
+      } else if (error.name === 'NotFoundError' || error.name === 'DeviceNotFoundError') {
+        errorMessage = '未找到麦克风设备，请检查麦克风是否正确连接';
+      } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+        errorMessage = '麦克风设备被其他应用占用，请关闭其他使用麦克风的应用';
+      } else if (error.name === 'OverconstrainedError' || error.name === 'ConstraintNotSatisfiedError') {
+        errorMessage = '麦克风设备不支持所需的音频格式';
+      } else if (error.name === 'NotSupportedError') {
+        errorMessage = '浏览器不支持录音功能，请使用Chrome、Firefox或Safari等现代浏览器';
+      } else if (error.name === 'SecurityError') {
+        errorMessage = '安全限制：请确保网站使用HTTPS访问，或在浏览器中手动允许麦克风权限';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      return { success: false, error: errorMessage };
     }
   }
 

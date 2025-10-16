@@ -21,6 +21,24 @@ export default defineConfig({
     },
     
     proxy: {
+      '/api': {
+        target: 'https://192.168.1.66:10096',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+        headers: {
+          'Origin': 'https://192.168.1.66:10096'
+        }
+      },
+      '/ws': {
+        target: 'wss://192.168.1.66:10095',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+        headers: {
+          'Origin': 'wss://192.168.1.66:10095'
+        }
+      },
       '/ollama': {
         target: 'http://192.168.1.66:11434',
         changeOrigin: true,

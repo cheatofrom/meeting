@@ -17,7 +17,7 @@ export const useMobilePanelState = () => {
   };
 
   // 根据录音状态和音频URL自动切换面板
-  const updatePanelState = (audioUrl: string, isRecording: boolean, hasResults: boolean, showAISummary: boolean) => {
+  const updatePanelState = (audioUrl: string, isRecording: boolean, _hasResults: boolean, showAISummary: boolean) => {
     if (!isMobile()) {
       setShowPanelSwitcher(false);
       return;

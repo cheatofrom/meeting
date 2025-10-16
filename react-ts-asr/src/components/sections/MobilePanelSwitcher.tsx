@@ -13,7 +13,7 @@ const MobilePanelSwitcher: React.FC<MobilePanelSwitcherProps> = ({
   currentPanel,
   onPanelSwitch,
   hasAudio,
-  hasResults,
+  hasResults: _,
   showAISummary
 }) => {
   const panels = [

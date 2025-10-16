@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback } from 'react';
-import { Button, Typography, Space, Collapse, message } from 'antd';
+import { Button, Typography, Space, Collapse } from 'antd';
 import { SendOutlined, SaveOutlined, ExperimentOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -9,7 +9,6 @@ import { useMarkdownComponents } from '../utils/markdownComponents';
 import { isMobile } from '../utils/deviceUtils';
 import { markdownToHtml, processThinkTagsToHtml } from '../../../utils/markdownToHtml';
 import ErrorBoundary from '../../common/ErrorBoundary';
-import FallbackContent from '../../common/FallbackContent';
 
 const { Text } = Typography;
 
@@ -61,32 +60,6 @@ export const AISummaryTab: React.FC<AISummaryTabProps> = ({
     // 始终进行完整解析，确保内容不被截断
     return parseThinkTags(aiSummaryResult);
   }, [aiSummaryResult]);
-  
-  // 移动端简化渲染函数
-  const renderSimpleContent = useCallback((content: string) => {
-    // 简单的文本处理，去除复杂的markdown语法
-    const processedContent = content
-      .replace(/#{1,6}\s+/g, '') // 移除标题标记
-      .replace(/\*\*(.+?)\*\*/g, '$1') // 移除粗体标记，保留内容
-      .replace(/\*(.+?)\*/g, '$1') // 移除斜体标记，保留内容
-      .replace(/\[(.+?)\]\(.+?\)/g, '$1') // 移除链接，保留链接文本
-      .replace(/```[\s\S]*?```/g, '[代码块]') // 将代码块替换为简单标识
-      .replace(/`(.+?)`/g, '$1') // 移除行内代码标记
-      .replace(/>\s(.+)/g, '• $1') // 将引用转换为列表项
-      .replace(/\n\s*[-*+]\s/g, '\n• ') // 将列表项转换为简单的项目符号
-      .replace(/\n\s*\d+\.\s/g, '\n• '); // 将有序列表转换为简单的项目符号
-    
-    return (
-      <div style={{ 
-        whiteSpace: 'pre-wrap', 
-        lineHeight: '1.6',
-        fontSize: '14px',
-        color: '#333'
-      }}>
-        {processedContent}
-      </div>
-    );
-  }, []);
   
   // 移动端专用的think标签渲染函数
   const renderMobileThinkContent = useCallback((content: string) => {

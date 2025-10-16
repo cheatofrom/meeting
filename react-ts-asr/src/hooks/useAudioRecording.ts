@@ -51,15 +51,37 @@ export const useAudioRecording = (onAudioProcess: (buffer: Int16Array, powerLeve
     console.log(`useAudioRecording: 开始${recordingMode}录音...`);
 
     try {
-      const success = await currentRecorder.start();
+      const result = await currentRecorder.start();
 
-      if (success) {
-        setIsRecording(true);
-        const modeText = recordingMode === 'microphone' ? '麦克风录音' : '系统录音';
-        messageApi.success(`开始${modeText}`);
+      if (result && typeof result === 'object' && 'success' in result) {
+        // 新的返回格式
+        if (result.success) {
+          setIsRecording(true);
+          const modeText = recordingMode === 'microphone' ? '麦克风录音' : '系统录音';
+          messageApi.success(`开始${modeText}`);
+        } else {
+          const modeText = recordingMode === 'microphone' ? '麦克风录音' : '系统录音';
+          const errorMsg = result.error || `启动${modeText}失败`;
+          messageApi.error(errorMsg);
+          
+          // 如果是麦克风权限问题，提供额外的帮助信息
+          if (recordingMode === 'microphone' && result.error?.includes('权限')) {
+            setTimeout(() => {
+              messageApi.info('提示：如果是手机浏览器，请确保已信任HTTPS证书并允许麦克风权限');
+            }, 2000);
+          }
+        }
       } else {
-        const modeText = recordingMode === 'microphone' ? '麦克风录音' : '系统录音';
-        messageApi.error(`启动${modeText}失败`);
+        // 兼容旧的boolean返回格式
+        const success = result as boolean;
+        if (success) {
+          setIsRecording(true);
+          const modeText = recordingMode === 'microphone' ? '麦克风录音' : '系统录音';
+          messageApi.success(`开始${modeText}`);
+        } else {
+          const modeText = recordingMode === 'microphone' ? '麦克风录音' : '系统录音';
+          messageApi.error(`启动${modeText}失败`);
+        }
       }
     } catch (error) {
       console.error('录音启动异常:', error);

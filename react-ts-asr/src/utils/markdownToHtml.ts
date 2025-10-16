@@ -87,7 +87,7 @@ export function markdownToHtml(markdown: string): string {
 export function processThinkTagsToHtml(content: string): string {
   const thinkRegex = /<think>([\s\S]*?)<\/think>/gi;
   
-  return content.replace(thinkRegex, (match, thinkContent) => {
+  return content.replace(thinkRegex, (_, thinkContent) => {
     const processedThinkContent = markdownToHtml(thinkContent.trim());
     
     return `
