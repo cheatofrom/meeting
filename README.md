@@ -1,4 +1,4 @@
-# 🎙️ 会议语音识别系统 (Meeting ASR System)
+# 🎙️ AI会议纪要系统 (Meeting ASR System)
 
 <div align="center">
 
