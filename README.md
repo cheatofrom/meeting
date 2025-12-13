@@ -781,6 +781,6 @@ git push origin feature/your-feature-name
 
 **© 2024 Meeting ASR System. All rights reserved.**
 
-Made with ❤️ by [Your Name](https://github.com/your-username)
+Made with ❤️ by [cheatofrom](https://github.com/cheatofrom)
 
 </div>
