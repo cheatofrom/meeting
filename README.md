@@ -762,6 +762,22 @@ git push origin feature/your-feature-name
 **[⬆ 回到顶部](#-会议语音识别系统-meeting-asr-system)**
 
 ---
+---
+
+---
+
+<div align="center">
+
+### ⭐ Star 增长情况
+
+[![GitHub stars](https://img.shields.io/github/stars/cheatofrom/meeting?style=social)](https://github.com/cheatofrom/meeting)
+
+<br/>
+
+[![Star History Chart](https://api.star-history.com/svg?repos=cheatofrom/meeting&type=Date)](https://star-history.com/#cheatofrom/meeting&Date)
+
+</div>
+
 
 **© 2024 Meeting ASR System. All rights reserved.**
 
