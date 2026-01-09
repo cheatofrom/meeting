@@ -158,7 +158,7 @@
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/your-username/Meeting-ASR-System.git
+git clone https://github.com/cheatofrom/meeting.git
 cd Meeting-ASR-System
 
 # 2. 后端部署
