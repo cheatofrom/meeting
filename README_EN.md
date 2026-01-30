@@ -4,11 +4,11 @@ A real-time and offline speech recognition system designed for meeting
 transcription, built on **FunASR**.\
 It supports streaming ASR, batch transcription, speaker diarization,
 punctuation restoration, and hotword boosting.
+
+------------------------------------------------------------------------
 <p align="center">
   中文 | <a href="README_EN.md">English</a>
 </p>
-------------------------------------------------------------------------
-
 ## 📋 Table of Contents
 
 -   Features
