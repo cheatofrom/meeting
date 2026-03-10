@@ -14,7 +14,7 @@ function App() {
       <AntdApp>
         <div className="app-container">
           <ASRComponent 
-          defaultServerUrl="wss://192.168.1.66/ws/" />
+          defaultServerUrl={`wss://${window.location.host}/ws`} />
         </div>
       </AntdApp>
     </ConfigProvider>

@@ -11,6 +11,14 @@ import torch
 import gc
 
 
+import platform
+import os
+
+# 获取项目根目录
+project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+models_dir = os.path.join(project_dir, "models")
+ssl_dir = os.path.join(project_dir, "ssl_key")
+
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--host", type=str, default="0.0.0.0", required=False, help="host ip, localhost, 0.0.0.0"
@@ -19,38 +27,44 @@ parser.add_argument("--port", type=int, default=10095, required=False, help="grp
 parser.add_argument(
     "--asr_model",
     type=str,
-    default="/home/dell/mnt/ai-work/Meeting/models/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch",
+    default=os.path.join(models_dir, "speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch"),
     help="model from modelscope",
 )
 parser.add_argument("--asr_model_revision", type=str, default="v2.0.4", help="")
 parser.add_argument(
     "--asr_model_online",
     type=str,
-    default="/home/dell/mnt/ai-work/Meeting/models/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-online",
+    default=os.path.join(models_dir, "speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-online"),
     help="model from modelscope",
 )
 parser.add_argument("--asr_model_online_revision", type=str, default="v2.0.4", help="")
 parser.add_argument(
     "--vad_model",
     type=str,
-    default="/home/dell/mnt/ai-work/Meeting/models/speech_fsmn_vad_zh-cn-16k-common-pytorch",
+    default=os.path.join(models_dir, "speech_fsmn_vad_zh-cn-16k-common-pytorch"),
     help="model from modelscope",
 )
 parser.add_argument("--vad_model_revision", type=str, default="v2.0.4", help="")
 parser.add_argument(
     "--punc_model",
     type=str,
-    default="/home/dell/mnt/ai-work/Meeting/models/punc_ct-transformer_zh-cn-common-vad_realtime-vocab272727",
+    default=os.path.join(models_dir, "punc_ct-transformer_zh-cn-common-vad_realtime-vocab272727"),
     help="model from modelscope",
 )
 parser.add_argument("--punc_model_revision", type=str, default="v2.0.4", help="")
-parser.add_argument("--ngpu", type=int, default=1, help="0 for cpu, 1 for gpu")
-parser.add_argument("--device", type=str, default="cuda", help="cuda, cpu")
+
+# 自动检测平台并设置默认设备
+is_macos = platform.system() == "Darwin"
+default_ngpu = 0 if is_macos else 1
+default_device = "cpu" if is_macos else "cuda"
+
+parser.add_argument("--ngpu", type=int, default=default_ngpu, help="0 for cpu, 1 for gpu")
+parser.add_argument("--device", type=str, default=default_device, help="cuda, cpu")
 parser.add_argument("--ncpu", type=int, default=4, help="cpu cores")
 parser.add_argument(
     "--certfile",
     type=str,
-    default="/home/dell/mnt/ai-work/Meeting/ssl_key/server.crt",
+    default=os.path.join(ssl_dir, "server.crt"),
     required=False,
     help="certfile for ssl",
 )
@@ -58,7 +72,7 @@ parser.add_argument(
 parser.add_argument(
     "--keyfile",
     type=str,
-    default="/home/dell/mnt/ai-work/Meeting/ssl_key/server.key",
+    default=os.path.join(ssl_dir, "server.key"),
     required=False,
     help="keyfile for ssl",
 )

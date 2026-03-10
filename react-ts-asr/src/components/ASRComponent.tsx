@@ -26,7 +26,7 @@ interface ASRComponentProps {
 }
 
 const ASRComponent: React.FC<ASRComponentProps> = ({
-  defaultServerUrl = 'wss://192.168.1.66/ws/'
+  defaultServerUrl = `wss://${window.location.host}/ws`
 }) => {
   const [useITN, setUseITN] = useState<boolean>(true);
   const [hotwords, setHotwords] = useState<string>('');

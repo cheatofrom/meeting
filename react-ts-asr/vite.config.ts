@@ -22,31 +22,31 @@ export default defineConfig({
     
     proxy: {
       '/api': {
-        target: 'https://192.168.1.66:10096',
+        target: 'https://localhost:10096',
         changeOrigin: true,
         secure: false,
         ws: true,
         headers: {
-          'Origin': 'https://192.168.1.66:10096'
+          'Origin': 'https://localhost:10096'
         }
       },
       '/ws': {
-        target: 'wss://192.168.1.66:10095',
+        target: 'wss://localhost:10095',
         changeOrigin: true,
         secure: false,
         ws: true,
         headers: {
-          'Origin': 'wss://192.168.1.66:10095'
+          'Origin': 'wss://localhost:10095'
         }
       },
       '/ollama': {
-        target: 'http://192.168.1.66:11434',
+        target: 'http://localhost:11434',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/ollama/, ''),
         secure: false,
         ws: true,
         headers: {
-          'Origin': 'http://192.168.1.66:11434'
+          'Origin': 'http://localhost:11434'
         }
       }
     }

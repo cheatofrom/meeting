@@ -10,6 +10,7 @@ from funasr import AutoModel
 import logging
 import uvicorn
 import torch
+import platform
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -34,16 +35,34 @@ def init_model():
     global model
     try:
         logger.info("正在初始化FunASR模型...")
+        # 获取项目根目录
+        project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        models_dir = os.path.join(project_dir, "models")
+        
+        # 自动检测设备
+        device = "cuda"
+        ngpu = 1
+        if platform.system() == "Darwin":
+            device = "cpu"
+            ngpu = 0
+        elif not torch.cuda.is_available():
+            device = "cpu"
+            ngpu = 0
+            
+        logger.info(f"使用设备: {device}, ngpu: {ngpu}")
+        
         model = AutoModel(
-            model="/home/dell/mnt/ai-work/Meeting/models/speech_paraformer-large-vad-punc-spk_asr_nat-zh-cn", 
+            model=os.path.join(models_dir, "speech_paraformer-large-vad-punc-spk_asr_nat-zh-cn"), 
             # model_revision="v2.0.4",
-            vad_model="/home/dell/mnt/ai-work/Meeting/models/speech_fsmn_vad_zh-cn-16k-common-pytorch", 
+            vad_model=os.path.join(models_dir, "speech_fsmn_vad_zh-cn-16k-common-pytorch"), 
             # vad_model_revision="v2.0.4",
-            punc_model="/home/dell/mnt/ai-work/Meeting/models/punc_ct-transformer_zh-cn-common-vocab272727-pytorch", 
+            punc_model=os.path.join(models_dir, "punc_ct-transformer_zh-cn-common-vad_realtime-vocab272727"), 
             # punc_model_revision="v2.0.4",
-            spk_model="/home/dell/mnt/ai-work/Meeting/models/speech_campplus_sv_zh-cn_16k-common", 
+            spk_model=os.path.join(models_dir, "speech_campplus_sv_zh-cn_16k-common"), 
             # spk_model_revision="v2.0.2",
-            disable_update=True
+            disable_update=True,
+            ngpu=ngpu,
+            device=device
         )
         logger.info("FunASR模型初始化完成")
     except Exception as e:
@@ -171,13 +190,26 @@ def health_check():
 
 if __name__ == '__main__':
     try:
+        # 获取项目根目录
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_dir = os.path.dirname(current_dir)
+        ssl_dir = os.path.join(project_dir, "ssl_key")
+        ssl_key = os.path.join(ssl_dir, "server.key")
+        ssl_cert = os.path.join(ssl_dir, "server.crt")
+
         # 初始化模型
         init_model()
         
         # 启动服务器
         logger.info("启动FunASR API服务器...")
-        uvicorn.run(app, host="0.0.0.0", port=10096,ssl_keyfile="/home/dell/mnt/ai-work/Meeting/ssl_key/server.key",
-            ssl_certfile="/home/dell/mnt/ai-work/Meeting/ssl_key/server.crt")
+        # 检查证书文件是否存在
+        if os.path.exists(ssl_key) and os.path.exists(ssl_cert):
+            logger.info(f"使用SSL证书: {ssl_cert}")
+            uvicorn.run(app, host="0.0.0.0", port=10096, ssl_keyfile=ssl_key, ssl_certfile=ssl_cert)
+        else:
+            logger.warning("未找到SSL证书，将以HTTP模式启动")
+            uvicorn.run(app, host="0.0.0.0", port=10096)
+
         
     except Exception as e:
         logger.error(f"服务器启动失败: {e}")
