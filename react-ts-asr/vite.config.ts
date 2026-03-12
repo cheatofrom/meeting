@@ -1,20 +1,29 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// ==================== 全局配置 ====================
+// 部署时只需修改此变量为你的服务器 IP 或域名
+const SERVER_HOST = "localhost";
+const WSS_PORT = 10095;
+const API_PORT = 10096;
+const OLLAMA_PORT = 11434;
+const FRONTEND_PORT = 5173;
+// ================================================
+
 // https://vite.dev/config/
 export default defineConfig({
   optimizeDeps: {
-    exclude: ['html-docx-js']   // ❶ 排除预构建
+    exclude: ['html-docx-js']
   },
   build: {
     rollupOptions: {
-      external: ['html-docx-js'] // ❷ 打包时也不处理
+      external: ['html-docx-js']
     }
   },
   plugins: [react()],
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: FRONTEND_PORT,
     https: {
       key: '../ssl_key/server.key',
       cert: '../ssl_key/server.crt'
@@ -22,31 +31,31 @@ export default defineConfig({
     
     proxy: {
       '/api': {
-        target: 'https://localhost:10096',
+        target: `https://${SERVER_HOST}:${API_PORT}`,
         changeOrigin: true,
         secure: false,
         ws: true,
         headers: {
-          'Origin': 'https://localhost:10096'
+          'Origin': `https://${SERVER_HOST}:${API_PORT}`
         }
       },
       '/ws': {
-        target: 'wss://localhost:10095',
+        target: `wss://${SERVER_HOST}:${WSS_PORT}`,
         changeOrigin: true,
         secure: false,
         ws: true,
         headers: {
-          'Origin': 'wss://localhost:10095'
+          'Origin': `wss://${SERVER_HOST}:${WSS_PORT}`
         }
       },
       '/ollama': {
-        target: 'http://localhost:11434',
+        target: `http://${SERVER_HOST}:${OLLAMA_PORT}`,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/ollama/, ''),
         secure: false,
         ws: true,
         headers: {
-          'Origin': 'http://localhost:11434'
+          'Origin': `http://${SERVER_HOST}:${OLLAMA_PORT}`
         }
       }
     }

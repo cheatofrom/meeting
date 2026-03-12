@@ -1,3 +1,5 @@
+import { getApiUrl } from '../config';
+
 export interface FileUploadResult {
   success: boolean;
   data?: Array<{
@@ -13,7 +15,7 @@ export interface FileUploadResult {
 export class FileUploadService {
   private apiBaseUrl: string;
 
-  constructor(apiBaseUrl: string = 'https://localhost:10095') {
+  constructor(apiBaseUrl: string = getApiUrl()) {
     this.apiBaseUrl = apiBaseUrl;
   }
 

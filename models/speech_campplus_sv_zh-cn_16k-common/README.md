@@ -136,5 +136,5 @@ python speakerlab/bin/infer_sv.py --model_id $model_id --wavs $wav_path
 
 # 3D-Speaker 开发者社区钉钉群
 <div align=left>
-<img src="dingding.jpg" width="260" />
+<img src="ding.png" width="300" />
 </div>

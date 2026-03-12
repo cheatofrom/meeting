@@ -10,7 +10,13 @@ from funasr import AutoModel
 import logging
 import uvicorn
 import torch
-import platform
+
+# 导入全局配置
+from config import (
+    SERVER_HOST, API_PORT, MODELS_DIR, SSL_DIR, SSL_CERT, SSL_KEY,
+    VAD_MODEL, PUNC_MODEL, SPK_MODEL, DEFAULT_DEVICE, DEFAULT_NGPU,
+    print_config
+)
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -35,34 +41,19 @@ def init_model():
     global model
     try:
         logger.info("正在初始化FunASR模型...")
-        # 获取项目根目录
-        project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        models_dir = os.path.join(project_dir, "models")
+        logger.info(f"使用设备: {DEFAULT_DEVICE}, ngpu: {DEFAULT_NGPU}")
         
-        # 自动检测设备
-        device = "cuda"
-        ngpu = 1
-        if platform.system() == "Darwin":
-            device = "cpu"
-            ngpu = 0
-        elif not torch.cuda.is_available():
-            device = "cpu"
-            ngpu = 0
-            
-        logger.info(f"使用设备: {device}, ngpu: {ngpu}")
+        # 使用全局配置中的模型路径
+        asr_spk_model = os.path.join(MODELS_DIR, "speech_paraformer-large-vad-punc-spk_asr_nat-zh-cn")
         
         model = AutoModel(
-            model=os.path.join(models_dir, "speech_paraformer-large-vad-punc-spk_asr_nat-zh-cn"), 
-            # model_revision="v2.0.4",
-            vad_model=os.path.join(models_dir, "speech_fsmn_vad_zh-cn-16k-common-pytorch"), 
-            # vad_model_revision="v2.0.4",
-            punc_model=os.path.join(models_dir, "punc_ct-transformer_zh-cn-common-vad_realtime-vocab272727"), 
-            # punc_model_revision="v2.0.4",
-            spk_model=os.path.join(models_dir, "speech_campplus_sv_zh-cn_16k-common"), 
-            # spk_model_revision="v2.0.2",
+            model=asr_spk_model, 
+            vad_model=VAD_MODEL, 
+            punc_model=PUNC_MODEL, 
+            spk_model=SPK_MODEL, 
             disable_update=True,
-            ngpu=ngpu,
-            device=device
+            ngpu=DEFAULT_NGPU,
+            device=DEFAULT_DEVICE
         )
         logger.info("FunASR模型初始化完成")
     except Exception as e:
@@ -190,25 +181,21 @@ def health_check():
 
 if __name__ == '__main__':
     try:
-        # 获取项目根目录
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_dir = os.path.dirname(current_dir)
-        ssl_dir = os.path.join(project_dir, "ssl_key")
-        ssl_key = os.path.join(ssl_dir, "server.key")
-        ssl_cert = os.path.join(ssl_dir, "server.crt")
+        # 打印当前配置
+        print_config()
 
         # 初始化模型
         init_model()
         
         # 启动服务器
-        logger.info("启动FunASR API服务器...")
+        logger.info(f"启动FunASR API服务器，端口: {API_PORT}...")
         # 检查证书文件是否存在
-        if os.path.exists(ssl_key) and os.path.exists(ssl_cert):
-            logger.info(f"使用SSL证书: {ssl_cert}")
-            uvicorn.run(app, host="0.0.0.0", port=10096, ssl_keyfile=ssl_key, ssl_certfile=ssl_cert)
+        if os.path.exists(SSL_KEY) and os.path.exists(SSL_CERT):
+            logger.info(f"使用SSL证书: {SSL_CERT}")
+            uvicorn.run(app, host="0.0.0.0", port=API_PORT, ssl_keyfile=SSL_KEY, ssl_certfile=SSL_CERT)
         else:
             logger.warning("未找到SSL证书，将以HTTP模式启动")
-            uvicorn.run(app, host="0.0.0.0", port=10096)
+            uvicorn.run(app, host="0.0.0.0", port=API_PORT)
 
         
     except Exception as e:

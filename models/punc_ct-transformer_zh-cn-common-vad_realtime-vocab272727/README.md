@@ -89,7 +89,7 @@ cat example/punc_example.txt
 from modelscope.pipelines import pipeline
 from modelscope.utils.constant import Tasks
 
-inference_pipline = pipeline(
+inference_pipeline = pipeline(
     task=Tasks.punctuation,
     model='iic/punc_ct-transformer_zh-cn-common-vad_realtime-vocab272727',
     model_revision="v2.0.4")
@@ -100,7 +100,7 @@ vads = inputs.split("|")
 rec_result_all="outputs: "
 cache = {}
 for vad in vads:
-    rec_result = inference_pipeline(text_in=vad, cache=cache)
+    rec_result = inference_pipeline(vad, cache=cache)
     rec_result_all += rec_result[0]['text']
 
 print(rec_result_all)

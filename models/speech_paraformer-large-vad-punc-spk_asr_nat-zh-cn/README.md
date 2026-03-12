@@ -72,19 +72,18 @@ finetune-support: True
   - [CAM++模型](https://modelscope.cn/models/damo/speech_campplus_speaker-diarization_common/summary)
 
 
-## <strong>[ModelScope-FunASR](https://github.com/alibaba-damo-academy/FunASR)</strong>
-<strong>[FunASR](https://github.com/alibaba-damo-academy/FunASR)</strong>希望在语音识别方面建立学术研究和工业应用之间的桥梁。通过支持在ModelScope上发布的工业级语音识别模型的训练和微调，研究人员和开发人员可以更方便地进行语音识别模型的研究和生产，并促进语音识别生态系统的发展。
+## <strong>[FunASR开源项目介绍](https://github.com/alibaba-damo-academy/FunASR)</strong>
+<strong>[FunASR](https://github.com/alibaba-damo-academy/FunASR)</strong>希望在语音识别的学术研究和工业应用之间架起一座桥梁。通过发布工业级语音识别模型的训练和微调，研究人员和开发人员可以更方便地进行语音识别模型的研究和生产，并推动语音识别生态的发展。让语音识别更有趣！
 
-[**最新动态**](https://github.com/alibaba-damo-academy/FunASR#whats-new) 
+[**github仓库**](https://github.com/alibaba-damo-academy/FunASR)
+| [**最新动态**](https://github.com/alibaba-damo-academy/FunASR#whats-new) 
 | [**环境安装**](https://github.com/alibaba-damo-academy/FunASR#installation)
-| [**介绍文档**](https://alibaba-damo-academy.github.io/FunASR/en/index.html)
-| [**中文教程**](https://github.com/alibaba-damo-academy/FunASR/wiki#funasr%E7%94%A8%E6%88%B7%E6%89%8B%E5%86%8C)
-| [**服务部署**](https://github.com/alibaba-damo-academy/FunASR/tree/main/funasr/runtime)
-| [**模型库**](https://github.com/alibaba-damo-academy/FunASR/blob/main/docs/model_zoo/modelscope_models.md)
+| [**服务部署**](https://www.funasr.com)
+| [**模型库**](https://github.com/alibaba-damo-academy/FunASR/tree/main/model_zoo)
 | [**联系我们**](https://github.com/alibaba-damo-academy/FunASR#contact)
 
 
-## 项目介绍
+## 模型原理介绍
 
 Paraformer是达摩院语音团队提出的一种高效的非自回归端到端语音识别框架。本项目应用户的要求在Paraformer-长音频版识别中集成了达摩院自研的CAM++系列说话人聚类与分类模型，结合长音频版的VAD、时间戳与标点预测功能，能够为识别结果中的每一个子句进行准确的说话人分类。
 
@@ -116,15 +115,8 @@ Paraformer模型结构如上图所示，由 Encoder、Predictor、Sampler、Deco
 - 论文解读：[达摩院开源工业级说话人识别模型CAM++](https://mp.weixin.qq.com/s/B_A1eudNJbMv72D17nk6KQ)
 
 
-## 如何使用与训练自己的模型
 
-本项目提供的预训练模型是基于大数据训练的通用领域识别模型，开发者可以基于此模型进一步利用ModelScope的微调功能或者本项目对应的Github代码仓库[FunASR](https://github.com/alibaba-damo-academy/FunASR)进一步进行模型的领域定制化。
-
-### 在Notebook中开发
-
-对于有开发需求的使用者，特别推荐您使用Notebook进行离线处理。先登录ModelScope账号，点击模型页面右上角的“在Notebook中打开”按钮出现对话框，首次使用会提示您关联阿里云账号，按提示操作即可。关联账号后可进入选择启动实例界面，选择计算资源，建立实例，待实例创建完成后进入开发环境，进行调用。
-
-#### 基于ModelScope进行推理
+## 基于ModelScope进行推理
 
 - 推理支持音频格式如下：
   - wav文件路径，例如：data/test/audios/asr_example.wav
@@ -152,26 +144,26 @@ if __name__ == '__main__':
     output_dir = "./results"
     inference_pipeline = pipeline(
         task=Tasks.auto_speech_recognition,
-        model='damo/speech_paraformer-large-vad-punc-spk_asr_nat-zh-cn',
-        model_revision='v0.0.2',
-        vad_model='damo/speech_fsmn_vad_zh-cn-16k-common-pytorch',
-        punc_model='damo/punc_ct-transformer_cn-en-common-vocab471067-large',
+        model='iic/speech_paraformer-large-vad-punc-spk_asr_nat-zh-cn',
+        model_revision='v2.0.4',
+        vad_model='iic/speech_fsmn_vad_zh-cn-16k-common-pytorch', vad_model_revision="v2.0.4",
+        punc_model='iic/punc_ct-transformer_cn-en-common-vocab471067-large', punc_model_revision="v2.0.4",
         output_dir=output_dir,
     )
-    rec_result = inference_pipeline(audio_in=audio_in, batch_size_token=5000, batch_size_token_threshold_s=40, max_single_segment_time=6000)
+    rec_result = inference_pipeline(audio_in, batch_size_s=300, batch_size_token_threshold_s=40)
     print(rec_result)
 ```
 
 - 输入音频为wav格式，api调用方式可参考如下范例:
 
 ```python
-rec_result = inference_pipeline(audio_in='asr_speaker_demo.wav')
+rec_result = inference_pipeline('asr_speaker_demo.wav')
 ```
 
 - 若输入格式为文件wav.scp(注：文件名需要以.scp结尾)，可添加 output_dir 参数将识别结果写入文件中，api调用方式可参考如下范例:
 
 ```python
-inference_pipeline(audio_in="wav.scp")
+inference_pipeline("wav.scp", output_dir='./output_dir')
 ```
 识别结果输出路径结构如下：
 
@@ -179,7 +171,6 @@ inference_pipeline(audio_in="wav.scp")
 tree output_dir/
 output_dir/
 └── 1best_recog
-    ├── rtf
     ├── score
     ├── text
     └── time_stamp
@@ -187,44 +178,131 @@ output_dir/
 1 directory, 4 files
 ```
 
+## 基于FunASR进行推理
 
-### 在本地机器中开发
+下面为快速上手教程，测试音频（[中文](https://isv-data.oss-cn-hangzhou.aliyuncs.com/ics/MaaS/ASR/test_audio/vad_example.wav)，[英文](https://isv-data.oss-cn-hangzhou.aliyuncs.com/ics/MaaS/ASR/test_audio/asr_example_en.wav)）
 
-#### 基于ModelScope进行微调和推理
+### 可执行命令行
+在命令行终端执行：
 
-支持基于ModelScope上数据集及私有数据集进行定制微调和推理，使用方式同Notebook中开发。
-
-#### 基于FunASR进行微调和推理
-
-FunASR框架支持魔搭社区开源的工业级的语音识别模型的training & finetuning，使得研究人员和开发者可以更加便捷的进行语音识别模型的研究和生产，目前已在Github开源：https://github.com/alibaba-damo-academy/FunASR 。若在使用过程中遇到任何问题，欢迎联系我们：[联系方式](https://github.com/alibaba-damo-academy/FunASR/blob/main/docs/images/dingding.jpg)
-
-#### FunASR框架安装
-
-- 安装FunASR和ModelScope，[详见](https://github.com/alibaba-damo-academy/FunASR/wiki)
-
-```sh
-pip3 install -U modelscope
-git clone https://github.com/alibaba/FunASR.git && cd FunASR
-pip3 install -e ./
+```shell
+funasr +model=paraformer-zh +vad_model="fsmn-vad" +punc_model="ct-punc" +input=vad_example.wav
 ```
 
+注：支持单条音频文件识别，也支持文件列表，列表为kaldi风格wav.scp：`wav_id   wav_path`
 
-#### 基于FunASR进行推理
+### python示例
+#### 非实时语音识别
+```python
+from funasr import AutoModel
+# paraformer-zh is a multi-functional asr model
+# use vad, punc, spk or not as you need
+model = AutoModel(model="paraformer-zh", model_revision="v2.0.4",
+                  vad_model="fsmn-vad", vad_model_revision="v2.0.4",
+                  punc_model="ct-punc-c", punc_model_revision="v2.0.4",
+                  # spk_model="cam++", spk_model_revision="v2.0.2",
+                  )
+res = model.generate(input=f"{model.model_path}/example/asr_example.wav", 
+            batch_size_s=300, 
+            hotword='魔搭')
+print(res)
+```
+注：`model_hub`：表示模型仓库，`ms`为选择modelscope下载，`hf`为选择huggingface下载。
 
-接下来会以私有数据集为例，介绍如何在FunASR框架中使用Paraformer-large进行推理以及微调。
+#### 实时语音识别
 
-```sh
-cd egs_modelscope/asr_vad_spk/speech_paraformer-large-vad-punc-spk_asr_nat-zh-cn
-python infer.py
+```python
+from funasr import AutoModel
+
+chunk_size = [0, 10, 5] #[0, 10, 5] 600ms, [0, 8, 4] 480ms
+encoder_chunk_look_back = 4 #number of chunks to lookback for encoder self-attention
+decoder_chunk_look_back = 1 #number of encoder chunks to lookback for decoder cross-attention
+
+model = AutoModel(model="paraformer-zh-streaming", model_revision="v2.0.4")
+
+import soundfile
+import os
+
+wav_file = os.path.join(model.model_path, "example/asr_example.wav")
+speech, sample_rate = soundfile.read(wav_file)
+chunk_stride = chunk_size[1] * 960 # 600ms
+
+cache = {}
+total_chunk_num = int(len((speech)-1)/chunk_stride+1)
+for i in range(total_chunk_num):
+    speech_chunk = speech[i*chunk_stride:(i+1)*chunk_stride]
+    is_final = i == total_chunk_num - 1
+    res = model.generate(input=speech_chunk, cache=cache, is_final=is_final, chunk_size=chunk_size, encoder_chunk_look_back=encoder_chunk_look_back, decoder_chunk_look_back=decoder_chunk_look_back)
+    print(res)
 ```
 
-#### 基于FunASR进行微调
-```sh
-cd egs_modelscope/asr_vad_spk/speech_paraformer-large-vad-punc-spk_asr_nat-zh-cn
-python finetune.py
+注：`chunk_size`为流式延时配置，`[0,10,5]`表示上屏实时出字粒度为`10*60=600ms`，未来信息为`5*60=300ms`。每次推理输入为`600ms`（采样点数为`16000*0.6=960`），输出为对应文字，最后一个语音片段输入需要设置`is_final=True`来强制输出最后一个字。
+
+#### 语音端点检测（非实时）
+```python
+from funasr import AutoModel
+
+model = AutoModel(model="fsmn-vad", model_revision="v2.0.4")
+
+wav_file = f"{model.model_path}/example/asr_example.wav"
+res = model.generate(input=wav_file)
+print(res)
 ```
 
-多卡进行微调训练用法与notebook中相同。
+#### 语音端点检测（实时）
+```python
+from funasr import AutoModel
+
+chunk_size = 200 # ms
+model = AutoModel(model="fsmn-vad", model_revision="v2.0.4")
+
+import soundfile
+
+wav_file = f"{model.model_path}/example/vad_example.wav"
+speech, sample_rate = soundfile.read(wav_file)
+chunk_stride = int(chunk_size * sample_rate / 1000)
+
+cache = {}
+total_chunk_num = int(len((speech)-1)/chunk_stride+1)
+for i in range(total_chunk_num):
+    speech_chunk = speech[i*chunk_stride:(i+1)*chunk_stride]
+    is_final = i == total_chunk_num - 1
+    res = model.generate(input=speech_chunk, cache=cache, is_final=is_final, chunk_size=chunk_size)
+    if len(res[0]["value"]):
+        print(res)
+```
+
+#### 标点恢复
+```python
+from funasr import AutoModel
+
+model = AutoModel(model="ct-punc", model_revision="v2.0.4")
+
+res = model.generate(input="那今天的会就到这里吧 happy new year 明年见")
+print(res)
+```
+
+#### 时间戳预测
+```python
+from funasr import AutoModel
+
+model = AutoModel(model="fa-zh", model_revision="v2.0.4")
+
+wav_file = f"{model.model_path}/example/asr_example.wav"
+text_file = f"{model.model_path}/example/text.txt"
+res = model.generate(input=(wav_file, text_file), data_type=("sound", "text"))
+print(res)
+```
+
+更多详细用法（[示例](https://github.com/alibaba-damo-academy/FunASR/tree/main/examples/industrial_data_pretraining)）
+
+
+## 微调
+
+详细用法（[示例](https://github.com/alibaba-damo-academy/FunASR/tree/main/examples/industrial_data_pretraining)）
+
+
+
 
 ## Benchmark
   结合大数据、大模型优化的Paraformer在一序列语音识别的benchmark上获得当前SOTA的效果，以下展示学术数据集AISHELL-1、AISHELL-2、WenetSpeech，公开评测项目SpeechIO TIOBE白盒测试场景的效果。在学术界常用的中文语音识别评测任务中，其表现远远超于目前公开发表论文中的结果，远好于单独封闭数据集上的模型。此结果为[Paraformer-large模型](https://www.modelscope.cn/models/damo/speech_paraformer-large_asr_nat-zh-cn-16k-aishell1-vocab8404-pytorch/summary)在无VAD和标点模型下的测试结果。
